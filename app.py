@@ -1,6 +1,18 @@
 import streamlit as st
 
 # =========================================================
+# DEFAULT TEMPERATURES (NEW FIX)
+# =========================================================
+if "mode" not in st.session_state:
+    st.session_state.mode = "cooling"
+
+if "tin" not in st.session_state:
+    st.session_state.tin = 24
+
+if "tout" not in st.session_state:
+    st.session_state.tout = 35
+
+# =========================================================
 # OPENINGS
 # =========================================================
 ΑΝΟΙΓΜΑΤΑ = {
@@ -11,9 +23,6 @@ import streamlit as st
     "μικρό_παράθυρο": 0.60 * 0.60,
 }
 
-# =========================================================
-# U VALUES
-# =========================================================
 U_ΑΝΟΙΓΜΑΤΩΝ = {
     "μονή_πόρτα": 3.2,
     "διπλή_συρόμενη_μπαλκονόπορτα": 2.8,
@@ -22,7 +31,6 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
     "μικρό_παράθυρο": 2.7,
 }
 
-# glazing multiplier
 ΚΟΥΦΩΜΑΤΑ = {
     "αλουμίνιο_χωρίς_θερμοδιακοπή": 1.30,
     "αλουμίνιο_θερμοδιακοπή": 1.10,
@@ -31,9 +39,6 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
     "μονό_τζάμι": 1.65
 }
 
-# =========================================================
-# INFILTRATION (NOW DEPENDS ON WINDOWS)
-# =========================================================
 ΔΙΑΡΡΟΕΣ = {
     "μονή_πόρτα": 30,
     "διπλή_συρόμενη_μπαλκονόπορτα": 20,
@@ -48,9 +53,6 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
     "καλή": 0.75
 }
 
-# =========================================================
-# BUILDING
-# =========================================================
 ΕΤΟΣ = {
     "πριν_1980": 1.30,
     "1980_2000": 1.12,
@@ -89,16 +91,27 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
 }
 
 # =========================================================
-# ENGINE (FIXED)
+# MODE SWITCH WITH PRESETS
+# =========================================================
+mode = st.radio("Λειτουργία", ["cooling", "heating"])
+
+if mode != st.session_state.mode:
+    st.session_state.mode = mode
+    if mode == "cooling":
+        st.session_state.tin = 24
+        st.session_state.tout = 35
+    else:
+        st.session_state.tin = 20
+        st.session_state.tout = 5
+
+# =========================================================
+# ENGINE
 # =========================================================
 def υπολογισμός(d, mode):
 
     όγκος = d["επιφάνεια"] * d["ύψος"]
     ΔΤ = abs(d["εξωτερική"] - d["εσωτερική"])
 
-    # -------------------------
-    # BASE (walls etc)
-    # -------------------------
     base = όγκος * (18 + ΔΤ * 1.1)
 
     base *= ΕΤΟΣ[d["έτος"]]
@@ -111,9 +124,6 @@ def υπολογισμός(d, mode):
 
     base *= ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
 
-    # -------------------------
-    # OPENINGS
-    # -------------------------
     u_loss = 0
     infiltration = 0
     solar = 0
@@ -131,48 +141,31 @@ def υπολογισμός(d, mode):
         count = d[k]
         area = count * ΑΝΟΙΓΜΑΤΑ[key]
 
-        # conduction
         u_loss += area * U_ΑΝΟΙΓΜΑΤΩΝ[key] * glazing * ΔΤ
-
-        # infiltration now depends ALSO on glazing
         infiltration += count * ΔΙΑΡΡΟΕΣ[key] * glazing * ΔΤ
-
-        # solar
         solar += area * 200 * d["ήλιος"]
 
-    # -------------------------
-    # INTERNAL
-    # -------------------------
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]]
 
-    # -------------------------
-    # FINAL LOGIC (FIXED)
-    # -------------------------
     if mode == "heating":
         total = base + u_loss + infiltration - solar - internal
     else:
         total = base + u_loss + infiltration + solar + internal
 
-    kw = total / 1000
-    btu = total * 3.412
-
-    return kw, btu
-
+    return total / 1000, total * 3.412
 
 # =========================================================
 # UI
 # =========================================================
 st.title("Υπολογιστής HVAC")
 
-mode = st.radio("Λειτουργία", ["cooling", "heating"])
-
 έτος = st.selectbox("Έτος", list(ΕΤΟΣ.keys()))
 
 επιφάνεια = st.number_input("m²", 5, 200, 20)
 ύψος = st.number_input("Ύψος", 2.0, 4.5, 2.8)
 
-εσωτερική = st.number_input("Εσωτερική", 18, 28, 24)
-εξωτερική = st.number_input("Εξωτερική", -5, 45, 35)
+εσωτερική = st.number_input("Εσωτερική °C", value=st.session_state.tin)
+εξωτερική = st.number_input("Εξωτερική °C", value=st.session_state.tout)
 
 τύπος = st.selectbox("Χρήση", list(ΕΣΩΤΕΡΙΚΑ.keys()))
 
