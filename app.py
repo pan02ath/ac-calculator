@@ -1,175 +1,157 @@
 import streamlit as st
 
 # -----------------------------
-# Standard opening areas (m²)
+# Τυπικά ανοίγματα (m²)
 # -----------------------------
-OPENINGS = {
-    "single_door": 0.90 * 2.10,   # 1.89 m²
-    "double_door": 1.40 * 2.10,   # 2.94 m²
-    "balcony_door": 1.60 * 2.10,  # 3.36 m²
-    "large_window": 1.20 * 1.40,  # 1.68 m²
-    "small_window": 0.60 * 0.60,  # 0.36 m²
+ΑΝΟΙΓΜΑΤΑ = {
+    "μονή_πόρτα": 0.90 * 2.10,
+    "διπλή_πόρτα": 1.40 * 2.10,
+    "μπαλκονόπορτα": 1.60 * 2.10,
+    "μεγάλο_παράθυρο": 1.20 * 1.40,
+    "μικρό_παράθυρο": 0.60 * 0.60,
 }
 
 # -----------------------------
-# Multipliers
+# Συντελεστές
 # -----------------------------
-SUN_FACTOR = {
-    "shaded": 0.85,
-    "normal": 1.0,
-    "high": 1.2
+ΗΛΙΟΣ = {
+    "σκιασμένο": 0.85,
+    "κανονικό": 1.0,
+    "έντονη": 1.2
 }
 
-AIR_TIGHTNESS = {
-    "good": 0.9,
-    "normal": 1.0,
-    "leaky": 1.15
+ΑΕΡΟΣΤΕΓΑΝΟΤΗΤΑ = {
+    "καλή": 0.9,
+    "μέτρια": 1.0,
+    "κακή": 1.15
 }
 
-ROOF_EXPOSURE = {
-    "no": 1.0,
-    "yes": 1.2
+ΣΤΕΓΗ = {
+    "όχι": 1.0,
+    "ναι": 1.2
 }
 
-# NEW: insulation / building quality
-BUILDING_QUALITY = {
-    "old": 1.25,        # no insulation / old windows
-    "average": 1.0,     # typical Greek apartment
-    "modern": 0.85,     # insulated + better windows
-    "high_perf": 0.7    # rare high efficiency
+ΠΟΙΟΤΗΤΑ_ΚΤΙΡΙΟΥ = {
+    "παλιό": 1.25,
+    "μέσο": 1.0,
+    "μοντέρνο": 0.85,
+    "υψηλής_απόδοσης": 0.7
 }
 
 # -----------------------------
-# Cooling load calculation
+# Υπολογισμός ψυκτικού φορτίου
 # -----------------------------
-def calculate_load(data):
-    area = data["area"]
-    height = data["height"]
-    volume = area * height
+def υπολογισμός(δεδομένα):
+    επιφάνεια = δεδομένα["επιφάνεια"]
+    ύψος = δεδομένα["ύψος"]
+    όγκος = επιφάνεια * ύψος
 
-    # Temperature difference (NEW KEY FACTOR)
-    delta_t = data["outdoor_temp"] - data["indoor_temp"]
-    delta_t = max(delta_t, 5)  # safety floor
+    # Διαφορά θερμοκρασίας
+    delta_t = δεδομένα["εξωτερική"] - δεδομένα["εσωτερική"]
+    delta_t = max(delta_t, 5)
 
-    # Base heat gain (improved physics approximation)
-    # 30–45 W/m³ depending on ΔT
-    base_factor = 30 + (delta_t - 10) * 1.2
-    base_factor = max(base_factor, 25)
+    # Βασικό φορτίο
+    συντελεστής = 30 + (delta_t - 10) * 1.2
+    συντελεστής = max(25, συντελεστής)
 
-    base = volume * base_factor
+    βασικό = όγκος * συντελεστής
 
-    # -----------------------------
-    # Openings
-    # -----------------------------
-    window_area = (
-        data["large_window"] * OPENINGS["large_window"] +
-        data["small_window"] * OPENINGS["small_window"] +
-        data["balcony_door"] * OPENINGS["balcony_door"]
+    # Ανοίγματα
+    παράθυρα = (
+        δεδομένα["μεγάλα_παράθυρα"] * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
+        δεδομένα["μικρά_παράθυρα"] * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
+        δεδομένα["μπαλκονόπορτες"] * ΑΝΟΙΓΜΑΤΑ["μπαλκονόπορτα"]
     )
 
-    door_area = (
-        data["single_door"] * OPENINGS["single_door"] +
-        data["double_door"] * OPENINGS["double_door"]
+    πόρτες = (
+        δεδομένα["μονές_πόρτες"] * ΑΝΟΙΓΜΑΤΑ["μονή_πόρτα"] +
+        δεδομένα["διπλές_πόρτες"] * ΑΝΟΙΓΜΑΤΑ["διπλή_πόρτα"]
     )
 
-    total_openings = window_area + door_area
+    συνολικά_ανοίγματα = παράθυρα + πόρτες
 
-    # -----------------------------
-    # Solar gains (dominant factor)
-    # -----------------------------
-    solar_gain = total_openings * 260  # W/m² peak sun gain
+    # Ηλιακά κέρδη
+    ηλιακά = συνολικά_ανοίγματα * 260
+    ηλιακά *= ΗΛΙΟΣ[δεδομένα["ήλιος"]]
 
-    solar_gain *= SUN_FACTOR[data["sun"]]
+    # Συντελεστές
+    βασικό *= ΑΕΡΟΣΤΕΓΑΝΟΤΗΤΑ[δεδομένα["αεροστεγανότητα"]]
+    βασικό *= ΣΤΕΓΗ[δεδομένα["στέγη"]]
+    βασικό *= ΠΟΙΟΤΗΤΑ_ΚΤΙΡΙΟΥ[δεδομένα["ποιότητα"]]
 
-    # -----------------------------
-    # Apply system modifiers
-    # -----------------------------
-    base *= AIR_TIGHTNESS[data["airtightness"]]
-    base *= ROOF_EXPOSURE[data["roof"]]
-    base *= BUILDING_QUALITY[data["building_quality"]]
+    συνολικό = βασικό + ηλιακά
 
-    # -----------------------------
-    # Total load
-    # -----------------------------
-    total_watts = base + solar_gain
+    kw = συνολικό / 1000
+    btu = συνολικό * 3.412
 
-    kw = total_watts / 1000
-    btu = total_watts * 3.412
-
-    return kw, btu, total_openings
+    return kw, btu, συνολικά_ανοίγματα
 
 
 # -----------------------------
 # UI
 # -----------------------------
-st.title("Υπολογιστής Κλιματιστικού Δωματίου (Έκδοση 2)")
+st.title("Υπολογιστής Κλιματιστικού Δωματίου")
 
-st.header("1. Διαστάσεις Δωματίου")
-area = st.number_input("Επιφάνεια δωματίου (m²)", 5.0, 200.0, 20.0)
-height = st.number_input("Ύψος δωματίου (m)", 2.0, 4.5, 2.8)
+st.header("1. Διαστάσεις")
+επιφάνεια = st.number_input("Επιφάνεια (m²)", 5.0, 200.0, 20.0)
+ύψος = st.number_input("Ύψος (m)", 2.0, 4.5, 2.8)
 
 st.header("2. Θερμοκρασίες")
+εσωτερική = st.number_input("Επιθυμητή εσωτερική θερμοκρασία (°C)", 20, 28, 24)
+εξωτερική = st.number_input("Μέγιστη εξωτερική θερμοκρασία (°C)", 30, 45, 35)
 
-indoor_temp = st.number_input("Επιθυμητή θερμοκρασία δωματίου (°C)", 20, 28, 24)
-outdoor_temp = st.number_input("Μέγιστη καλοκαιρινή εξωτερική θερμοκρασία (°C)", 30, 45, 35)
+st.header("3. Ανοίγματα")
 
-st.header("3. Παράθυρα & Πόρτες")
+μεγάλα_παράθυρα = st.number_input("Μεγάλα παράθυρα", 0, 20, 2)
+μικρά_παράθυρα = st.number_input("Μικρά παράθυρα", 0, 20, 1)
+μπαλκονόπορτες = st.number_input("Μπαλκονόπορτες", 0, 5, 0)
 
-large_window = st.number_input("Μεγάλα παράθυρα", 0, 20, 2)
-small_window = st.number_input("Μικρά παράθυρα", 0, 20, 1)
-balcony_door = st.number_input("Μπαλκονόπορτες", 0, 5, 0)
-
-single_door = st.number_input("Μονές πόρτες", 0, 5, 1)
-double_door = st.number_input("Διπλές πόρτες", 0, 5, 0)
+μονές_πόρτες = st.number_input("Μονές πόρτες", 0, 5, 1)
+διπλές_πόρτες = st.number_input("Διπλές πόρτες", 0, 5, 0)
 
 st.header("4. Συνθήκες")
 
-sun = st.selectbox("Έκθεση στον ήλιο", ["σκιασμένο", "κανονικό", "έντονη_ηλιοφάνεια"])
-airtightness = st.selectbox("Αεροστεγανότητα", ["καλή", "μέτρια", "κακή"])
-roof = st.selectbox("Δωμάτιο κάτω από στέγη;", ["όχι", "ναι"])
-
-building_quality = st.selectbox(
-    "Ποιότητα κατασκευής / μόνωσης",
-    ["old", "average", "modern", "high_perf"]
-)
+ήλιος = st.selectbox("Έκθεση στον ήλιο", ["σκιασμένο", "κανονικό", "έντονη"])
+αεροστεγανότητα = st.selectbox("Αεροστεγανότητα", ["καλή", "μέτρια", "κακή"])
+στέγη = st.selectbox("Κάτω από στέγη;", ["όχι", "ναι"])
+ποιότητα = st.selectbox("Ποιότητα κτιρίου", ["παλιό", "μέσο", "μοντέρνο", "υψηλής_απόδοσης"])
 
 # -----------------------------
 # Data pack
 # -----------------------------
-data = {
-    "area": area,
-    "height": height,
-    "indoor_temp": indoor_temp,
-    "outdoor_temp": outdoor_temp,
-    "large_window": large_window,
-    "small_window": small_window,
-    "balcony_door": balcony_door,
-    "single_door": single_door,
-    "double_door": double_door,
-    "sun": sun,
-    "airtightness": airtightness,
-    "roof": roof,
-    "building_quality": building_quality
+δεδομένα = {
+    "επιφάνεια": επιφάνεια,
+    "ύψος": ύψος,
+    "εσωτερική": εσωτερική,
+    "εξωτερική": εξωτερική,
+    "μεγάλα_παράθυρα": μεγάλα_παράθυρα,
+    "μικρά_παράθυρα": μικρά_παράθυρα,
+    "μπαλκονόπορτες": μπαλκονόπορτες,
+    "μονές_πόρτες": μονές_πόρτες,
+    "διπλές_πόρτες": διπλές_πόρτες,
+    "ήλιος": ήλιος,
+    "αεροστεγανότητα": αεροστεγανότητα,
+    "στέγη": στέγη,
+    "ποιότητα": ποιότητα
 }
 
 # -----------------------------
-# Result
+# Αποτέλεσμα
 # -----------------------------
-if st.button("Υπολογισμός Κλιματιστικού"):
-    kw, btu, opening_area = calculate_load(data)
+if st.button("Υπολογισμός"):
+    kw, btu, ανοίγματα = υπολογισμός(δεδομένα)
 
     st.subheader("Αποτέλεσμα")
 
-    st.write(f"Συνολική επιφάνεια ανοιγμάτων: {opening_area:.2f} m²")
+    st.write(f"Συνολικά ανοίγματα: {ανοίγματα:.2f} m²")
     st.write(f"Ψυκτικό φορτίο: {kw:.2f} kW")
     st.write(f"Ψυκτικό φορτίο: {btu:.0f} BTU/h")
 
-    # Recommendation logic
     if kw < 2.5:
-        st.success("Προτεινόμενο κλιματιστικό: ~9.000 BTU")
+        st.success("Προτεινόμενο: ~9.000 BTU")
     elif kw < 3.5:
-        st.success("Προτεινόμενο κλιματιστικό: ~12.000 BTU")
+        st.success("Προτεινόμενο: ~12.000 BTU")
     elif kw < 5:
-        st.success("Προτεινόμενο κλιματιστικό: ~18.000 BTU")
+        st.success("Προτεινόμενο: ~18.000 BTU")
     else:
-        st.success("Προτεινόμενο κλιματιστικό: 24.000+ BTU")
+        st.success("Προτεινόμενο: 24.000+ BTU")
