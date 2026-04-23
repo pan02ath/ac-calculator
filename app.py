@@ -143,7 +143,15 @@ def υπολογισμός(d, mode):
     # roof solar gain (NEW)
     roof_solar = roof_area * 120 * d["ηλιακή_έκθεση"]
 
-    Q_walls = U_wall * wall_area * ΔΤ
+    total_glazing_area = (
+        d["μεγάλα"]         * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
+        d["μικρά"]          * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
+        d["μπαλκονόπορτες"] * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["μονές"]          * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["συρόμενες"]      * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
+    )
+    effective_wall_area = max(wall_area - total_glazing_area, 0)
+    Q_walls = U_wall * effective_wall_area * ΔΤ
     Q_roof = U_roof * roof_area * ΔΤ
     Q_floor = U_floor * floor_area * ΔΤ
 
