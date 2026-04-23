@@ -9,7 +9,7 @@ if "mode" not in st.session_state:
     st.session_state.mode = "cooling"
 
 if "tin" not in st.session_state:
-    st.session_state.tin = 24
+    st.session_state.tin = 25
 
 if "tout" not in st.session_state:
     st.session_state.tout = 35
