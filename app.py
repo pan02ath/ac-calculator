@@ -181,10 +181,10 @@ mode = st.radio("Λειτουργία", ["cooling", "heating"])
 if mode != st.session_state.mode:
     st.session_state.mode = mode
     if mode == "cooling":
-        st.session_state.tin = 24
+        st.session_state.tin = 25
         st.session_state.tout = 35
     else:
-        st.session_state.tin = 20
+        st.session_state.tin = 21
         st.session_state.tout = 5
 
 έτος = st.selectbox("Έτος κατασκευής", list(ΕΤΟΣ.keys()))
@@ -210,9 +210,9 @@ if οροφή_υπάρχει:
 κουφώματα = st.selectbox("Κουφώματα", list(ΚΟΥΦΩΜΑΤΑ.keys()))
 αεροστεγανότητα = st.selectbox("Αεροστεγανότητα", list(ΑΕΡΟΔΙΕΙΣΔΥΣΗ.keys()))
 
-μεγάλα = st.number_input("Μεγάλα παράθυρα", 0, 20, 2)
-μικρά = st.number_input("Μικρά παράθυρα", 0, 20, 1)
-μπαλκονόπορτες = st.number_input("Διπλές ανοιγόμενες μπαλκονόπορτες", 0, 10, 0)
+μεγάλα = st.number_input("Μεγάλα παράθυρα", 0, 20, 0)
+μικρά = st.number_input("Μικρά παράθυρα", 0, 20, 0)
+μπαλκονόπορτες = st.number_input("Διπλές ανοιγόμενες μπαλκονόπορτες", 0, 10, 1)
 μονές = st.number_input("Μονές ανοιγόμενες μπαλκονόπορτες", 0, 5, 1)
 συρόμενες = st.number_input("Διπλές συρόμενες μπαλκονόπορτες", 0, 5, 0)
 
