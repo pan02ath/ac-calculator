@@ -80,10 +80,13 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
 ΤΟΙΧΟΙ = {1: 0.95, 2: 1.0, 3: 1.1, 4: 1.2}
 ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ = {0: 1.0, 1: 1.07, 2: 1.14}
 
-ΗΛΙΟΣ = {
-    "σκιασμένο": 0.7,
-    "κανονικό": 1.0,
-    "έντονη": 1.25
+# 🔥 NEW unified solar factor
+ΗΛΙΑΚΗ_ΕΚΘΕΣΗ = {
+    "πολύ_χαμηλή": 0.6,
+    "χαμηλή": 0.8,
+    "μέση": 1.0,
+    "υψηλή": 1.25,
+    "πολύ_υψηλή": 1.5
 }
 
 ΕΣΩΤΕΡΙΚΑ = {
@@ -94,7 +97,7 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
 }
 
 # =========================================================
-# ENGINE (PHYSICS BASED)
+# ENGINE
 # =========================================================
 def υπολογισμός(d, mode):
 
@@ -104,24 +107,17 @@ def υπολογισμός(d, mode):
     floor_area = max(d["επιφάνεια"], 1)
     height = d["ύψος"]
 
-    # geometry approximation
     side = math.sqrt(floor_area)
     wall_area = 2 * height * side * 2
     roof_area = floor_area if d["οροφή_υπάρχει"] else 0
 
-    # U-values
     U_wall = 1.5 * ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]] * ΕΤΟΣ[d["έτος"]]
     U_wall *= ΤΟΙΧΟΙ[d["εξωτερικοί"]]
     U_wall *= ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ[d["μη_θερμαινόμενοι"]]
 
-    if d["οροφή_υπάρχει"]:
-        U_roof = 1.2 * ΟΡΟΦΗ.get(d["οροφή"], 1.0)
-    else:
-        U_roof = 0
-
+    U_roof = 1.2 * ΟΡΟΦΗ.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
     U_floor = 1.3 * ΔΑΠΕΔΟ[d["δάπεδο"]]
 
-    # windows
     glazing_factor = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
 
     window_loss = 0
@@ -140,33 +136,32 @@ def υπολογισμός(d, mode):
         U_window = U_ΑΝΟΙΓΜΑΤΩΝ[key] * glazing_factor
         window_loss += U_window * area * ΔΤ
 
-        irradiance = 180 * d["ήλιος"]
+        irradiance = 180 * d["ηλιακή_έκθεση"]
         SHGC = 0.6 * glazing_factor
         solar_gain += area * irradiance * SHGC
 
-    # transmission
+    # roof solar gain (NEW)
+    roof_solar = roof_area * 120 * d["ηλιακή_έκθεση"]
+
     Q_walls = U_wall * wall_area * ΔΤ
     Q_roof = U_roof * roof_area * ΔΤ
     Q_floor = U_floor * floor_area * ΔΤ
 
     transmission = Q_walls + Q_roof + Q_floor + window_loss
 
-    # infiltration
     ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
     infiltration = 0.33 * ACH * volume * ΔΤ
 
-    # internal
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]]
 
     if mode == "heating":
-        total = transmission + infiltration - solar_gain - internal
+        total = transmission + infiltration - solar_gain - roof_solar - internal
     else:
-        total = transmission + infiltration + solar_gain + internal
+        total = transmission + infiltration + solar_gain + roof_solar + internal
 
     total = max(total, 0)
 
     return total / 1000, total * 3.412
-
 
 # =========================================================
 # UI
@@ -213,7 +208,9 @@ if οροφή_υπάρχει:
 μονές = st.number_input("Μονές ανοιγόμενες μπαλκονόπορτες", 0, 5, 1)
 συρόμενες = st.number_input("Διπλές συρόμενες μπαλκονόπορτες", 0, 5, 0)
 
-ήλιος = st.selectbox("Ήλιος", list(ΗΛΙΟΣ.keys()))
+# 🔥 unified solar input + disclaimer
+ηλιακή_έκθεση = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
+st.caption("Λάβε υπόψη: προσανατολισμό, σκιάσεις (δέντρα, μπαλκόνια), όροφο και γενική ηλιοφάνεια της περιοχής")
 
 d = {
     "έτος": έτος,
@@ -235,7 +232,7 @@ d = {
     "μπαλκονόπορτες": μπαλκονόπορτες,
     "μονές": μονές,
     "συρόμενες": συρόμενες,
-    "ήλιος": ΗΛΙΟΣ[ήλιος]
+    "ηλιακή_έκθεση": ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση]
 }
 
 # =========================================================
