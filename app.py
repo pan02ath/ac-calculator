@@ -330,14 +330,14 @@ try:
         # =========================================================
         st.subheader("Ανάλυση φορτίου")
 
-        sign = {
+sign = {
             "Τοίχοι":        "+",
             "Οροφή":         "+",
             "Δάπεδο":        "+",
-            "Ανοίγματα":     "+",
+            "Ανοίγματα":      "+",
             "Αεροδιείσδυση": "+",
-            "Ηλιακό":        "+" if mode == "cooling" else "−",
-            "Εσωτερικά":     "+" if mode == "cooling" else "−",
+            "Ηλιακό":        "+" if mode == "cooling" else "(Ignored)",
+            "Εσωτερικά":     "+" if mode == "cooling" else "(Ignored)",
         }
 
         for label, watts in breakdown.items():
