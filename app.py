@@ -189,44 +189,46 @@ if d["οροφή_υπάρχει"]:
     roof_solar = roof_area * coeff * d["ηλιακή_έκθεση"]
 else:
     roof_solar = 0
-    
-    total_glazing_area = (
-        d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
-        d["μικρά"]           * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
-        d["μπαλκονόπορτες"]  * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
-        d["μονές"]           * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
-        d["συρόμενες"]       * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
-    )
-    effective_wall_area = max(wall_area - total_glazing_area, 0)
-    Q_walls = U_wall * effective_wall_area * ΔΤ
-    Q_roof  = U_roof * roof_area * ΔΤ
-    Q_floor = U_floor * floor_area * ΔΤ
 
-    transmission = Q_walls + Q_roof + Q_floor + window_loss
 
-    ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
-    infiltration = 0.33 * ACH * volume * ΔΤ
+total_glazing_area = (
+    d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
+    d["μικρά"]           * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
+    d["μπαλκονόπορτες"]  * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
+    d["μονές"]           * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
+    d["συρόμενες"]       * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
+)
 
-    internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
+effective_wall_area = max(wall_area - total_glazing_area, 0)
+Q_walls = U_wall * effective_wall_area * ΔΤ
+Q_roof  = U_roof * roof_area * ΔΤ
+Q_floor = U_floor * floor_area * ΔΤ
 
-    if mode == "heating":
-        total = transmission + infiltration - solar_gain - roof_solar - internal
-    else:
-        total = transmission + infiltration + solar_gain + roof_solar + internal
+transmission = Q_walls + Q_roof + Q_floor + window_loss
 
-    total = max(total, 0)
+ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
+infiltration = 0.33 * ACH * volume * ΔΤ
 
-    breakdown = {
-        "Τοίχοι":        Q_walls,
-        "Οροφή":         Q_roof,
-        "Δάπεδο":        Q_floor,
-        "Ανοίγματα":     window_loss,
-        "Αεροδιείσδυση": infiltration,
-        "Ηλιακό":        solar_gain + roof_solar,
-        "Εσωτερικά":     internal,
-    }
+internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
-    return total / 1000, total * 3.412, breakdown
+if mode == "heating":
+    total = transmission + infiltration - solar_gain - roof_solar - internal
+else:
+    total = transmission + infiltration + solar_gain + roof_solar + internal
+
+total = max(total, 0)
+
+breakdown = {
+    "Τοίχοι":        Q_walls,
+    "Οροφή":         Q_roof,
+    "Δάπεδο":        Q_floor,
+    "Ανοίγματα":     window_loss,
+    "Αεροδιείσδυση": infiltration,
+    "Ηλιακό":        solar_gain + roof_solar,
+    "Εσωτερικά":     internal,
+}
+
+return total / 1000, total * 3.412, breakdown
 
 # =========================================================
 # UI
