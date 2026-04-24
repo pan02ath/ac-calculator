@@ -211,8 +211,11 @@ def υπολογισμός(d, mode):
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
     if mode == "heating":
-        total = transmission + infiltration - solar_gain - roof_solar - internal
+        # CHANGE: We ignore solar and internal gains for peak heating sizing.
+        # We also add a 15% safety factor (1.15) for thermal bridges.
+        total = (transmission + infiltration) * 1.15
     else:
+        # In cooling, gains are added because the AC must fight them.
         total = transmission + infiltration + solar_gain + roof_solar + internal
 
     total = max(total, 0)
