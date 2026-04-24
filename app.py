@@ -290,18 +290,10 @@ d = {
 # =========================================================
 try:
     if st.button("Υπολογισμός"):
-    kw, btu, breakdown = υπολογισμός(d, mode)
+        kw, btu, breakdown = υπολογισμός(d, mode)
 
-    st.success(f"Υπολογισμένο φορτίο: {kw:.2f} kW")
-    st.success(f"{btu:.0f} BTU/h")
-
-    # ============================
-    # CONFIDENCE INTERVAL (±10%)
-    # ============================
-    low = kw * 0.90
-    high = kw * 1.10
-
-    st.info(f"Εύρος εκτίμησης (±10%): {low:.2f} – {high:.2f} kW")
+        st.success(f"{kw:.2f} kW")
+        st.success(f"{btu:.0f} BTU/h")
 
         # =========================================================
         # BREAKDOWN
