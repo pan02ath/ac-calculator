@@ -170,7 +170,22 @@ def υπολογισμός(d, mode):
         solar_gain += area * irradiance * SHGC
 
     # Roof solar gain — horizontal surface, 0.67 ratio vs vertical glazing
-    roof_solar = roof_area * (d["βάση_ακτινοβολίας"] * 0.67) * d["ηλιακή_έκθεση"]
+    ROOF_SOLAR_FACTOR = {
+    "ταράτσα_εκτεθειμένη": 0.90,
+    "μονωμένη": 0.35,
+    "κεραμοσκεπή": 0.50,
+    "θερμαινόμενος_χώρος": 0.10
+}
+
+if d["οροφή_υπάρχει"]:
+    roof_factor = ROOF_SOLAR_FACTOR.get(d["οροφή"], 0.5)
+    insulation_factor = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
+
+    roof_solar = roof_area * (
+        d["βάση_ακτινοβολίας"] * 0.45
+    ) * d["ηλιακή_έκθεση"] * roof_factor * insulation_factor * 0.75
+else:
+    roof_solar = 0
 
     total_glazing_area = (
         d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
