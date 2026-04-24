@@ -93,8 +93,17 @@ def υπολογισμός(d, mode):
         total *= 1.10 
     else:
         total = transmission + infiltration + solar_gain + roof_solar + internal
+        # Latent Heat Factor (Humidity) based on Climate Zone
+        if "Ζώνη Α" in d["kenak_label"]: total *= 1.07
+        elif "Ζώνη Β" in d["kenak_label"]: total *= 1.04
 
-    if d.get("περιστασιακή"): total *= 1.25
+    # Building Age Penalty for Intermittent Use (Thermal Mass)
+    if d.get("περιστασιακή"):
+        if d["έτος"] == "πριν_1980": penalty = 1.35
+        elif d["έτος"] == "1980_2000": penalty = 1.28
+        else: penalty = 1.22
+        total *= penalty
+        
     if d.get("αθόρυβη"): total *= 1.20
 
     total = max(total, 0)
@@ -191,7 +200,8 @@ d = {
     "αεροστεγανότητα": αεροστεγανότητα, "μεγάλα": μεγάλα, "μικρά": μικρά,
     "μπαλκονόπορτες": μπαλκονόπορτες, "μονές": μονές, "συρόμενες": συρόμενες,
     "ηλιακή_έκθεση": ηλιακή_έκθεση_val, "βάση_ακτινοβολίας": βάση_val,
-    "βόρειος": βόρειος, "περιστασιακή": περιστασιακή, "αθόρυβη": αθόρυβη
+    "βόρειος": βόρειος, "περιστασιακή": περιστασιακή, "αθόρυβη": αθόρυβη,
+    "kenak_label": kenak_zone
 }
 
 if st.button("Υπολογισμός"):
@@ -241,7 +251,7 @@ if st.button("Υπολογισμός"):
 --------------------------------------------------"""
         st.code(report, language="text")
 
-# ---  DISCLAIMER  ---
+# ---  DISCLAIMER   ---
         st.markdown("---")
         st.caption("""
         **Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση βάσει των δεδομένων που εισήχθησαν και προορίζεται για ενημερωτική χρήση. Για την οριστική μελέτη, απαιτείται αυτοψία και συμβουλή από αδειούχο μηχανολόγο.
