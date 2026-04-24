@@ -80,13 +80,21 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
 ΤΟΙΧΟΙ = {1: 0.95, 2: 1.0, 3: 1.1, 4: 1.2}
 ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ = {0: 1.0, 1: 1.07, 2: 1.14}
 
-# 🔥 NEW unified solar factor
+# Rescaled: πολύ_χαμηλή now represents genuine deep shade
 ΗΛΙΑΚΗ_ΕΚΘΕΣΗ = {
-    "πολύ_χαμηλή": 0.6,
-    "χαμηλή": 0.8,
+    "πολύ_χαμηλή": 0.15,
+    "χαμηλή": 0.45,
     "μέση": 1.0,
     "υψηλή": 1.25,
     "πολύ_υψηλή": 1.5
+}
+
+# KENAK climatic zones — peak summer horizontal irradiance (W/m²)
+KENAK_ΖΩΝΗ = {
+    "Ζώνη Α – Αθήνα, Ηράκλειο, Ρόδος, νησιά Αιγαίου": 240,
+    "Ζώνη Β – Θεσσαλονίκη, Πάτρα, Βόλος, Λάρισα":     210,
+    "Ζώνη Γ – Ιωάννινα, Κοζάνη, Τρίκαλα":              190,
+    "Ζώνη Δ – Ορεινές / βόρειες περιοχές":              170,
 }
 
 ΕΣΩΤΕΡΙΚΑ = {
@@ -136,12 +144,12 @@ def υπολογισμός(d, mode):
         U_window = U_ΑΝΟΙΓΜΑΤΩΝ[key] * glazing_factor
         window_loss += U_window * area * ΔΤ
 
-        irradiance = 180 * d["ηλιακή_έκθεση"]
+        irradiance = d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"]
         SHGC = 0.6 * glazing_factor
         solar_gain += area * irradiance * SHGC
 
-    # roof solar gain (NEW)
-    roof_solar = roof_area * 120 * d["ηλιακή_έκθεση"]
+    # Roof solar gain — uses same base irradiance, scaled by 0.67 (horizontal vs vertical ratio)
+    roof_solar = roof_area * (d["βάση_ακτινοβολίας"] * 0.67) * d["ηλιακή_έκθεση"]
 
     total_glazing_area = (
         d["μεγάλα"]         * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
@@ -152,7 +160,7 @@ def υπολογισμός(d, mode):
     )
     effective_wall_area = max(wall_area - total_glazing_area, 0)
     Q_walls = U_wall * effective_wall_area * ΔΤ
-    Q_roof = U_roof * roof_area * ΔΤ
+    Q_roof  = U_roof * roof_area * ΔΤ
     Q_floor = U_floor * floor_area * ΔΤ
 
     transmission = Q_walls + Q_roof + Q_floor + window_loss
@@ -169,7 +177,17 @@ def υπολογισμός(d, mode):
 
     total = max(total, 0)
 
-    return total / 1000, total * 3.412
+    breakdown = {
+        "Τοίχοι":       Q_walls,
+        "Οροφή":        Q_roof,
+        "Δάπεδο":       Q_floor,
+        "Ανοίγματα":    window_loss,
+        "Αεροδιείσδυση": infiltration,
+        "Ηλιακό":       solar_gain + roof_solar,
+        "Εσωτερικά":    internal,
+    }
+
+    return total / 1000, total * 3.412, breakdown
 
 # =========================================================
 # UI
@@ -216,7 +234,7 @@ if οροφή_υπάρχει:
 μονές = st.number_input("Μονές ανοιγόμενες μπαλκονόπορτες", 0, 5, 0)
 συρόμενες = st.number_input("Διπλές συρόμενες μπαλκονόπορτες", 0, 5, 0)
 
-# 🔥 unified solar input + disclaimer
+kenak_zone   = st.selectbox("Κλιματική ζώνη (ΚΕΝΑΚ)", list(KENAK_ΖΩΝΗ.keys()))
 ηλιακή_έκθεση = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
 st.caption("Λάβε υπόψη: προσανατολισμό, σκιάσεις (δέντρα, μπαλκόνια), όροφο και γενική ηλιοφάνεια της περιοχής")
 
@@ -240,7 +258,8 @@ d = {
     "μπαλκονόπορτες": μπαλκονόπορτες,
     "μονές": μονές,
     "συρόμενες": συρόμενες,
-    "ηλιακή_έκθεση": ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση]
+    "ηλιακή_έκθεση": ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση],
+    "βάση_ακτινοβολίας": KENAK_ΖΩΝΗ[kenak_zone],
 }
 
 # =========================================================
@@ -248,10 +267,28 @@ d = {
 # =========================================================
 try:
     if st.button("Υπολογισμός"):
-        kw, btu = υπολογισμός(d, mode)
+        kw, btu, breakdown = υπολογισμός(d, mode)
 
         st.success(f"{kw:.2f} kW")
         st.success(f"{btu:.0f} BTU/h")
+
+        # =========================================================
+        # BREAKDOWN
+        # =========================================================
+        st.subheader("Ανάλυση φορτίου")
+
+        sign = {
+            "Τοίχοι":        "+",
+            "Οροφή":         "+",
+            "Δάπεδο":        "+",
+            "Ανοίγματα":     "+",
+            "Αεροδιείσδυση": "+",
+            "Ηλιακό":        "+" if mode == "cooling" else "−",
+            "Εσωτερικά":     "+" if mode == "cooling" else "−",
+        }
+
+        for label, watts in breakdown.items():
+            st.write(f"**{label}:** {sign[label]} {watts/1000:.2f} kW")
 
         # =========================================================
         # SUMMARY
@@ -266,6 +303,7 @@ try:
 Εσωτερική θερμοκρασία: {εσωτερική} °C
 Εξωτερική θερμοκρασία: {εξωτερική} °C
 
+Κλιματική ζώνη (ΚΕΝΑΚ): {kenak_zone}
 Έτος κατασκευής: {έτος}
 Θερμομόνωση: {μόνωση}
 Κουφώματα: {κουφώματα}
@@ -288,6 +326,15 @@ try:
 Ηλιακή έκθεση: {ηλιακή_έκθεση}
 
 Χρήση χώρου: {τύπος}
+
+--- ΑΝΑΛΥΣΗ ---
+Τοίχοι:          {breakdown["Τοίχοι"]/1000:.2f} kW
+Οροφή:           {breakdown["Οροφή"]/1000:.2f} kW
+Δάπεδο:          {breakdown["Δάπεδο"]/1000:.2f} kW
+Ανοίγματα:       {breakdown["Ανοίγματα"]/1000:.2f} kW
+Αεροδιείσδυση:   {breakdown["Αεροδιείσδυση"]/1000:.2f} kW
+Ηλιακό:          {breakdown["Ηλιακό"]/1000:.2f} kW
+Εσωτερικά:       {breakdown["Εσωτερικά"]/1000:.2f} kW
 
 --- ΑΠΟΤΕΛΕΣΜΑ ---
 {kw:.2f} kW
