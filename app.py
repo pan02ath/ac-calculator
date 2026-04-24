@@ -77,6 +77,13 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
     "θερμαινόμενος_χώρος": 0.90
 }
 
+ROOF_SOLAR_GAIN_COEFF = {
+    "ταράτσα_εκτεθειμένη": 35,
+    "μονωμένη": 15,
+    "κεραμοσκεπή": 22,
+    "θερμαινόμενος_χώρος": 5
+}
+
 # FIX: ΤΟΙΧΟΙ now represents the fraction of wall area that is exposed.
 # Previously this was a U-value nudge (0.95–1.2), which had negligible effect.
 # Now it correctly scales the actual wall area: 1 wall = 25%, 2 = 50%, etc.
@@ -169,24 +176,20 @@ def υπολογισμός(d, mode):
         SHGC = 0.6 * glazing_factor
         solar_gain += area * irradiance * SHGC
 
-    # Roof solar gain — horizontal surface, 0.67 ratio vs vertical glazing
-    ROOF_SOLAR_FACTOR = {
-    "ταράτσα_εκτεθειμένη": 0.90,
-    "μονωμένη": 0.35,
-    "κεραμοσκεπή": 0.50,
-    "θερμαινόμενος_χώρος": 0.10
-}
-
 if d["οροφή_υπάρχει"]:
-    roof_factor = ROOF_SOLAR_FACTOR.get(d["οροφή"], 0.5)
-    insulation_factor = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
+    if d["οροφή"] == "ταράτσα_εκτεθειμένη":
+        coeff = 35
+    elif d["οροφή"] == "μονωμένη":
+        coeff = 15
+    elif d["οροφή"] == "κεραμοσκεπή":
+        coeff = 22
+    else:  # θερμαινόμενος_χώρος
+        coeff = 5
 
-    roof_solar = roof_area * (
-        d["βάση_ακτινοβολίας"] * 0.45
-    ) * d["ηλιακή_έκθεση"] * roof_factor * insulation_factor * 0.75
+    roof_solar = roof_area * coeff * d["ηλιακή_έκθεση"]
 else:
     roof_solar = 0
-
+    
     total_glazing_area = (
         d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
         d["μικρά"]           * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
