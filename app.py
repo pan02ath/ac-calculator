@@ -77,7 +77,11 @@ U_ΑΝΟΙΓΜΑΤΩΝ = {
     "θερμαινόμενος_χώρος": 0.90
 }
 
-ΤΟΙΧΟΙ = {1: 0.95, 2: 1.0, 3: 1.1, 4: 1.2}
+# FIX: ΤΟΙΧΟΙ now represents the fraction of wall area that is exposed.
+# Previously this was a U-value nudge (0.95–1.2), which had negligible effect.
+# Now it correctly scales the actual wall area: 1 wall = 25%, 2 = 50%, etc.
+ΤΟΙΧΟΙ = {1: 0.25, 2: 0.50, 3: 0.75, 4: 1.0}
+
 ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ = {0: 1.0, 1: 1.07, 2: 1.14}
 
 # Rescaled: πολύ_χαμηλή represents genuine deep shade
@@ -98,9 +102,6 @@ KENAK_ΖΩΝΗ = {
 }
 
 # Internal gains per room type (W)
-# υπνοδωμάτιο: corrected automatically in engine for daytime unoccupancy
-# παιδικό_δωμάτιο: daytime occupied, no correction applied
-# σαλοκουζίνα: combined appliance + occupancy load
 ΕΣΩΤΕΡΙΚΑ = {
     "υπνοδωμάτιο":      300,
     "παιδικό_δωμάτιο":  350,
@@ -110,10 +111,6 @@ KENAK_ΖΩΝΗ = {
     "γραφείο":          400,
 }
 
-# Rooms that are unoccupied at peak cooling hours and cold-soaked in heating
-# Multiplier reduces internal gains, which:
-#   cooling → lowers total load (less heat to remove)
-#   heating → raises total load (less internal offset against losses)
 ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ = {
     "υπνοδωμάτιο":      0.5,
     "παιδικό_δωμάτιο":  1.0,
@@ -135,11 +132,16 @@ def υπολογισμός(d, mode):
     height = d["ύψος"]
 
     side = math.sqrt(floor_area)
-    wall_area = 2 * height * side * 2
+    # Total perimeter wall area (all 4 sides)
+    total_wall_area = 2 * height * side * 2
+
+    # FIX: Apply area fraction based on number of external walls
+    wall_area = total_wall_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
+
     roof_area = floor_area if d["οροφή_υπάρχει"] else 0
 
     U_wall = 1.5 * ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]] * ΕΤΟΣ[d["έτος"]]
-    U_wall *= ΤΟΙΧΟΙ[d["εξωτερικοί"]]
+    # FIX: ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ still applied to U-value (correct — it affects thermal resistance)
     U_wall *= ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ[d["μη_θερμαινόμενοι"]]
 
     U_roof = 1.2 * ΟΡΟΦΗ.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
@@ -187,10 +189,6 @@ def υπολογισμός(d, mode):
     ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
     infiltration = 0.33 * ACH * volume * ΔΤ
 
-    # Internal gains with occupancy correction
-    # For υπνοδωμάτιο the 0.5 factor works correctly in both modes:
-    #   cooling: less heat to remove → lower load
-    #   heating: less internal offset → higher load
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
     if mode == "heating":
@@ -288,12 +286,22 @@ d = {
 # =========================================================
 # RUN
 # =========================================================
+DIVERSITY = 0.15  # ±15% range
+
 try:
     if st.button("Υπολογισμός"):
         kw, btu, breakdown = υπολογισμός(d, mode)
 
-        st.success(f"{kw:.2f} kW")
-        st.success(f"{btu:.0f} BTU/h")
+        kw_low  = kw  * (1 - DIVERSITY)
+        kw_high = kw  * (1 + DIVERSITY)
+        btu_low  = btu * (1 - DIVERSITY)
+        btu_high = btu * (1 + DIVERSITY)
+
+        st.success(f"**Αποτέλεσμα:** {kw:.2f} kW  |  {btu:.0f} BTU/h")
+        st.info(
+            f"**Εύρος ±15%:** {kw_low:.2f} – {kw_high:.2f} kW  "
+            f"|  {btu_low:.0f} – {btu_high:.0f} BTU/h"
+        )
 
         # =========================================================
         # BREAKDOWN
@@ -363,8 +371,8 @@ try:
 Εσωτερικά:       {breakdown["Εσωτερικά"]/1000:.2f} kW
 
 --- ΑΠΟΤΕΛΕΣΜΑ ---
-{kw:.2f} kW
-{btu:.0f} BTU/h
+{kw:.2f} kW  ({kw_low:.2f} – {kw_high:.2f} kW)
+{btu:.0f} BTU/h  ({btu_low:.0f} – {btu_high:.0f} BTU/h)
 """
         st.text(summary)
 
