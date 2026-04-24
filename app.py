@@ -128,7 +128,7 @@ with c1:
 if mode == "ψύξη":
     with c2:
         kenak_zone = st.selectbox("Κλιματική ζώνη (ΚΕΝΑΚ)", list(KENAK_ΖΩΝΗ.keys()))
-        ηλιακή_έκθεση = st.selectbox("Ηλιακή έκθεση & Σκίαση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
+        ηλιακή_έκθεση = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
         ηλιακή_έκθεση_val, βάση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση], KENAK_ΖΩΝΗ[kenak_zone]
 else:
     with c2:
