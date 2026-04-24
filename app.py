@@ -176,59 +176,58 @@ def υπολογισμός(d, mode):
         SHGC = 0.6 * glazing_factor
         solar_gain += area * irradiance * SHGC
 
-if d["οροφή_υπάρχει"]:
-    if d["οροφή"] == "ταράτσα_εκτεθειμένη":
-        coeff = 35
-    elif d["οροφή"] == "μονωμένη":
-        coeff = 15
-    elif d["οροφή"] == "κεραμοσκεπή":
-        coeff = 22
-    else:  # θερμαινόμενος_χώρος
-        coeff = 5
+    if d["οροφή_υπάρχει"]:
+        if d["οροφή"] == "ταράτσα_εκτεθειμένη":
+            coeff = 35
+        elif d["οροφή"] == "μονωμένη":
+            coeff = 15
+        elif d["οροφή"] == "κεραμοσκεπή":
+            coeff = 22
+        else:  # θερμαινόμενος_χώρος
+            coeff = 5
 
-    roof_solar = roof_area * coeff * d["ηλιακή_έκθεση"]
-else:
-    roof_solar = 0
+        roof_solar = roof_area * coeff * d["ηλιακή_έκθεση"]
+    else:
+        roof_solar = 0
 
+    total_glazing_area = (
+        d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
+        d["μικρά"]           * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
+        d["μπαλκονόπορτες"]  * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["μονές"]           * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["συρόμενες"]       * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
+    )
 
-total_glazing_area = (
-    d["μεγάλα"]          * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
-    d["μικρά"]           * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
-    d["μπαλκονόπορτες"]  * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
-    d["μονές"]           * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
-    d["συρόμενες"]       * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
-)
+    effective_wall_area = max(wall_area - total_glazing_area, 0)
+    Q_walls = U_wall * effective_wall_area * ΔΤ
+    Q_roof  = U_roof * roof_area * ΔΤ
+    Q_floor = U_floor * floor_area * ΔΤ
 
-effective_wall_area = max(wall_area - total_glazing_area, 0)
-Q_walls = U_wall * effective_wall_area * ΔΤ
-Q_roof  = U_roof * roof_area * ΔΤ
-Q_floor = U_floor * floor_area * ΔΤ
+    transmission = Q_walls + Q_roof + Q_floor + window_loss
 
-transmission = Q_walls + Q_roof + Q_floor + window_loss
+    ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
+    infiltration = 0.33 * ACH * volume * ΔΤ
 
-ACH = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
-infiltration = 0.33 * ACH * volume * ΔΤ
+    internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
-internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
+    if mode == "heating":
+        total = transmission + infiltration - solar_gain - roof_solar - internal
+    else:
+        total = transmission + infiltration + solar_gain + roof_solar + internal
 
-if mode == "heating":
-    total = transmission + infiltration - solar_gain - roof_solar - internal
-else:
-    total = transmission + infiltration + solar_gain + roof_solar + internal
+    total = max(total, 0)
 
-total = max(total, 0)
+    breakdown = {
+        "Τοίχοι":        Q_walls,
+        "Οροφή":         Q_roof,
+        "Δάπεδο":        Q_floor,
+        "Ανοίγματα":     window_loss,
+        "Αεροδιείσδυση": infiltration,
+        "Ηλιακό":        solar_gain + roof_solar,
+        "Εσωτερικά":     internal,
+    }
 
-breakdown = {
-    "Τοίχοι":        Q_walls,
-    "Οροφή":         Q_roof,
-    "Δάπεδο":        Q_floor,
-    "Ανοίγματα":     window_loss,
-    "Αεροδιείσδυση": infiltration,
-    "Ηλιακό":        solar_gain + roof_solar,
-    "Εσωτερικά":     internal,
-}
-
-return total / 1000, total * 3.412, breakdown
+    return total / 1000, total * 3.412, breakdown
 
 # =========================================================
 # UI
