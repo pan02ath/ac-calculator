@@ -159,7 +159,7 @@ with c3:
     έτος = st.selectbox("Έτος κατασκευής", list(ΕΤΟΣ.keys()))
 with c4:
     τύπος = st.selectbox("Χρήση χώρου", list(ΕΣΩΤΕΡΙΚΑ.keys()))
-    δάπεδο = st.selectbox("Τύπος δαπέδου", list(ΔΑΠΕΔΟ.keys()))
+    δάπεδο = st.selectbox("Δάπεδο σε επαφή με", list(ΔΑΠΕΔΟ.keys()))
     βόρειος = st.checkbox("Βόρειος προσανατολισμός") if mode == "θέρμανση" else False
 
 # --- CHAPTER 3: ΔΟΜΙΚΑ ΣΤΟΙΧΕΙΑ ---
