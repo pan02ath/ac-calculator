@@ -242,6 +242,10 @@ if st.button("Υπολογισμός"):
         
         st.divider()
         st.success(f"**Απαιτούμενο Θερμικό Φορτίο: {load_btu:.0f} BTU/h**")
+        st.info(f"**Προτεινόμενο Εύρος Φορτίου (±15%):** {load_btu*0.85:.0f} – {load_btu*1.15:.0f} BTU/h")
+        
+        st.markdown("---")
+        st.subheader("Πρόταση Μονάδας")
         st.info(f"**Συνιστώμενη ονομαστική ισχύς κλιματιστικού: {commercial_range} BTU**")
         st.write(f"*(αναμενόμενη μέγιστη ισχύς **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς)*")
 
