@@ -61,32 +61,46 @@ def get_commercial_range(nominal_btu_val):
 def υπολογισμός(d, mode):
     volume = d["επιφάνεια"] * d["ύψος"]
     ΔΤ = abs(d["εξωτερική"] - d["εσωτερική"])
+
     floor_area = max(d["επιφάνεια"], 1)
     side = math.sqrt(floor_area)
     total_wall_area = 2 * d["ύψος"] * side * 2
     wall_area = total_wall_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
+
     roof_area = floor_area if d["οροφή_υπάρχει"] else 0
+
     U_wall = 1.5 * ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]] * ΕΤΟΣ[d["έτος"]] * ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ[d["μη_θερμαινόμενοι"]]
     U_roof = 1.2 * ΟΡΟΦΗ.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
     U_floor = 1.3 * ΔΑΠΕΔΟ[d["δάπεδο"]]
+
     glazing_factor = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
     window_loss = 0
     solar_gain = 0
     total_glazing_area = 0
-    windows = [(d["μεγάλα"], "μεγάλο_παράθυρο"), (d["μικρά"], "μικρό_παράθυρο"), (d["μπαλκονόπορτες"], "διπλή_ανοιγόμενη_μπαλκονόπορτα"), (d["μονές"], "μονή_ανοιγόμενη_μπαλκονόπορτα"), (d["συρόμενες"], "διπλή_συρόμενη_μπαλκονόπορτα")]
+
+    windows = [
+        (d["μεγάλα"], "μεγάλο_παράθυρο"), (d["μικρά"], "μικρό_παράθυρο"),
+        (d["μπαλκονόπορτες"], "διπλή_ανοιγόμενη_μπαλκονόπορτα"),
+        (d["μονές"], "μονή_ανοιγόμενη_μπαλκονόπορτα"), (d["συρόμενες"], "διπλή_συρόμενη_μπαλκονόπορτα")
+    ]
+
     for count, key in windows:
         area = count * ΑΝΟΙΓΜΑΤΑ[key]
         total_glazing_area += area
         window_loss += U_ΑΝΟΙΓΜΑΤΩΝ[key] * glazing_factor * area * ΔΤ
-        if mode == "ψύξη": solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * (0.6 * glazing_factor)
+        if mode == "ψύξη":
+            solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * (0.6 * glazing_factor)
+
     roof_solar = 0
     if mode == "ψύξη" and d["οροφή_υπάρχει"]:
         coeffs = {"ταράτσα_εκτεθειμένη": 35, "μονωμένη": 15, "κεραμοσκεπή": 22, "θερμαινόμενος_χώρος": 5}
         roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
+
     effective_wall_area = max(wall_area - total_glazing_area, 0)
     transmission = (U_wall * effective_wall_area * ΔΤ) + (U_roof * roof_area * ΔΤ) + (U_floor * floor_area * ΔΤ) + window_loss
     infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
+
     if mode == "θέρμανση":
         total = (transmission + infiltration)
         if d.get("βόρειος"): total *= 1.15
@@ -95,14 +109,19 @@ def υπολογισμός(d, mode):
         total = transmission + infiltration + solar_gain + roof_solar + internal
         if "Ζώνη Α" in d["kenak_label"]: total *= 1.07
         elif "Ζώνη Β" in d["kenak_label"]: total *= 1.04
+
     if d.get("περιστασιακή"):
-        penalty = 1.35 if d["έτος"] == "πριν_1980" else 1.28 if d["έτος"] == "1980_2000" else 1.22
+        if d["έτος"] == "πριν_1980": penalty = 1.35
+        elif d["έτος"] == "1980_2000": penalty = 1.28
+        else: penalty = 1.22
         total *= penalty
+        
     if d.get("αθόρυβη"): total *= 1.20
+
     total = max(total, 0)
     load_btu = total * 3.412
-
-    # --- CAPACITY DERATING LOGIC (Softenened) ---
+    
+    # --- SOFTENED CAPACITY DERATING LOGIC ---
     f_derating = 1.0
     temp = d["εξωτερική"]
     if mode == "θέρμανση":
@@ -115,9 +134,16 @@ def υπολογισμός(d, mode):
         if temp <= 35: f_derating = 1.0
         elif 35 < temp <= 40: f_derating = 0.97
         else: f_derating = 0.90
+    
     nominal_btu_needed = load_btu / f_derating
 
-    breakdown = {"Τοίχοι": (U_wall * effective_wall_area * ΔΤ), "Οροφή": (U_roof * roof_area * ΔΤ), "Δάπεδο": (U_floor * floor_area * ΔΤ), "Ανοίγματα": window_loss, "Αεροδιείσδυση": infiltration, "Ηλιακό": (solar_gain + roof_solar) if mode == "ψύξη" else 0, "Εσωτερικά": internal if mode == "ψύξη" else 0}
+    breakdown = {
+        "Τοίχοι": (U_wall * effective_wall_area * ΔΤ), "Οροφή": (U_roof * roof_area * ΔΤ),
+        "Δάπεδο": (U_floor * floor_area * ΔΤ), "Ανοίγματα": window_loss, "Αεροδιείσδυση": infiltration,
+        "Ηλιακό": (solar_gain + roof_solar) if mode == "ψύξη" else 0,
+        "Εσωτερικά": internal if mode == "ψύξη" else 0,
+    }
+
     return total / 1000, load_btu, nominal_btu_needed, breakdown, f_derating
 
 # =========================================================
@@ -125,25 +151,33 @@ def υπολογισμός(d, mode):
 # =========================================================
 st.set_page_config(page_title="Υπολογιστής Ενεργειακών Απαιτήσεων HVAC", layout="centered")
 st.title("Υπολογιστής ενεργειακών απαιτήσεων για κλιματισμό")
+
 mode = st.radio("Λειτουργία", ["ψύξη", "θέρμανση"])
+
 if "last_mode" not in st.session_state or st.session_state.last_mode != mode:
     st.session_state.last_mode = mode
     if mode == "ψύξη": st.session_state.tin, st.session_state.tout = 25, 35
     else: st.session_state.tin, st.session_state.tout = 21, 5
+
 st.header("Κλιματικές συνθήκες")
 c1, c2 = st.columns(2)
 with c1:
     εσωτερική = st.number_input("Εσωτερική Θερμοκρασία (°C)", value=st.session_state.tin)
     εξωτερική = st.number_input("Εξωτερική Θερμοκρασία (°C)", value=st.session_state.tout)
+
 ηλιακή_έκθεση_val, βάση_val = 1.0, 210
 kenak_zone = "N/A"
+ηλιακή_έκθεση_label = "N/A"
+
 if mode == "ψύξη":
     with c2:
         kenak_zone = st.selectbox("Κλιματική ζώνη (ΚΕΝΑΚ)", list(KENAK_ΖΩΝΗ.keys()))
         ηλιακή_έκθεση_label = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
         ηλιακή_έκθεση_val, βάση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση_label], KENAK_ΖΩΝΗ[kenak_zone]
 else:
-    with c2: st.info("Σε λειτουργία θέρμανσης, τα ηλιακά κέρδη παραλείπονται.")
+    with c2:
+        st.info("Σε λειτουργία θέρμανσης, τα ηλιακά κέρδη παραλείπονται για τον υπολογισμό φορτίου αιχμής.")
+
 st.header("Περιγραφή χώρου")
 c3, c4 = st.columns(2)
 with c3:
@@ -154,6 +188,7 @@ with c4:
     τύπος = st.selectbox("Χρήση χώρου", list(ΕΣΩΤΕΡΙΚΑ.keys()))
     δάπεδο = st.selectbox("Δάπεδο σε επαφή με", list(ΔΑΠΕΔΟ.keys()))
     βόρειος = st.checkbox("Βόρειος προσανατολισμός") if mode == "θέρμανση" else False
+
 st.header("Δομικά στοιχεία")
 μόνωση = st.selectbox("Θερμομόνωση τοίχων", list(ΘΕΡΜΟΜΟΝΩΣΗ.keys()))
 c5, c6 = st.columns(2)
@@ -165,36 +200,89 @@ with c6:
     οροφή_υπάρχει = st.selectbox("Ύπαρξη οροφής", ["όχι", "ναι"]) == "ναι"
     οροφή = st.selectbox("Τύπος οροφής", list(ΟΡΟΦΗ.keys())) if οροφή_υπάρχει else "N/A"
     κουφώματα = st.selectbox("Τύπος πλαισίων/τζαμιών", list(ΚΟΥΦΩΜΑΤΑ.keys()))
+
 st.write("**Πλήθος Ανοιγμάτων:**")
 c7, c8, c9 = st.columns(3)
-with c7: μεγάλα, μονές = st.number_input("Μεγάλα παράθυρα", 0, 20, 0), st.number_input("Μονές μπαλκ/πορτες", 0, 10, 0)
-with c8: μικρά, συρόμενες = st.number_input("Μικρά παράθυρα", 0, 20, 0), st.number_input("Συρόμενες μπαλκ/πορτες", 0, 10, 0)
-with c9: μπαλκονόπορτες = st.number_input("Διπλές ανοιγόμενες μπαλκ/πορτες", 0, 10, 1)
-st.header("Συνήθης χρήση κλιματιστικού")
-περιστασιακή, αθόρυβη = st.checkbox("Προτιμάτε περιστασιακή χρήση;"), st.checkbox("Προτιμάτε την αθόρυβη λειτουργία;")
+with c7:
+    μεγάλα = st.number_input("Μεγάλα παράθυρα", 0, 20, 0)
+    μονές = st.number_input("Μονές μπαλκ/πορτες", 0, 10, 0)
+with c8:
+    μικρά = st.number_input("Μικρά παράθυρα", 0, 20, 0)
+    συρόμενες = st.number_input("Συρόμενες μπαλκ/πορτες", 0, 10, 0)
+with c9:
+    μπαλκονόπορτες = st.number_input("Διπλές ανοιγόμενες μπαλκ/πορτες", 0, 10, 1)
 
-d = {"έτος": έτος, "μόνωση": μόνωση, "επιφάνεια": επιφάνεια, "ύψος": ύψος, "εσωτερική": εσωτερική, "εξωτερική": εξωτερική, "τύπος": τύπος, "δάπεδο": δάπεδο, "εξωτερικοί": εξωτερικοί, "μη_θερμαινόμενοι": μη_θερμαινόμενοι, "οροφή_υπάρχει": οροφή_υπάρχει, "οροφή": οροφή, "κουφώματα": κουφώματα, "αεροστεγανότητα": αεροστεγανότητα, "μεγάλα": μεγάλα, "μικρά": μικρά, "μπαλκονόπορτες": μπαλκονόπορτες, "μονές": μονές, "συρόμενες": συρόμενες, "ηλιακή_έκθεση": ηλιακή_έκθεση_val, "βάση_ακτινοβολίας": βάση_val, "βόρειος": βόρειος, "περιστασιακή": περιστασιακή, "αθόρυβη": αθόρυβη, "kenak_label": kenak_zone}
+st.header("Συνήθης χρήση κλιματιστικού")
+περιστασιακή = st.checkbox("Προτιμάτε περιστασιακή χρήση; (άναμμα μόνο όταν ο χώρος είναι ήδη κρύος/ζεστός)")
+αθόρυβη = st.checkbox("Προτιμάτε την αθόρυβη λειτουργία; (χαμηλή ταχύτητα ανεμιστήρα)")
+
+d = {
+    "έτος": έτος, "μόνωση": μόνωση, "επιφάνεια": επιφάνεια, "ύψος": ύψος,
+    "εσωτερική": εσωτερική, "εξωτερική": εξωτερική, "τύπος": τύπος,
+    "δάπεδο": δάπεδο, "εξωτερικοί": εξωτερικοί, "μη_θερμαινόμενοι": μη_θερμαινόμενοι,
+    "οροφή_υπάρχει": οροφή_υπάρχει, "οροφή": οροφή, "κουφώματα": κουφώματα,
+    "αεροστεγανότητα": αεροστεγανότητα, "μεγάλα": μεγάλα, "μικρά": μικρά,
+    "μπαλκονόπορτες": μπαλκονόπορτες, "μονές": μονές, "συρόμενες": συρόμενες,
+    "ηλιακή_έκθεση": ηλιακή_έκθεση_val, "βάση_ακτινοβολίας": βάση_val,
+    "βόρειος": βόρειος, "περιστασιακή": περιστασιακή, "αθόρυβη": αθόρυβη,
+    "kenak_label": kenak_zone
+}
 
 if st.button("Υπολογισμός"):
-    kw, load_btu, nominal_btu, breakdown, f_derating = υπολογισμός(d, mode)
-    commercial_range = get_commercial_range(nominal_btu)
-    st.divider()
-    
-    # --- Summary Table ---
-    st.subheader("Σύνοψη Αποτελεσμάτων")
-    res_data = {"Παράμετρος": ["Απαιτούμενη Ισχύς (kW)", "Απαιτούμενη Ισχύς (BTU/h)", "Προτεινόμενο Εύρος Φορτίου (±15%)"], "Τιμή": [f"{kw:.2f} kW", f"{load_btu:.0f} BTU/h", f"{load_btu*0.85:.0f} - {load_btu*1.15:.0f} BTU/h"]}
-    st.table(res_data)
+    try:
+        kw, load_btu, nominal_btu, breakdown, f_derating = υπολογισμός(d, mode)
+        commercial_range = get_commercial_range(nominal_btu)
+        st.divider()
+        st.success(f"**Απαιτούμενη Ισχύς:** {kw:.2f} kW  |  {load_btu:.0f} BTU/h")
+        st.info(f"**Προτεινόμενο Εύρος (±15%):** {load_btu*0.85:.0f} – {load_btu*1.15:.0f} BTU/h")
+        
+        # --- THE REQUESTED LINES ---
+        st.info(f"**Συνιστώμενη ονομαστική ισχύς κλιματιστικού: {commercial_range} BTU**")
+        st.write(f"*(αναμενόμενη μέγιστη ισχύς **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς)*")
 
-    # --- THE REQUESTED LINES ---
-    st.info(f"**Συνιστώμενη ονομαστική ισχύς κλιματιστικού: {commercial_range} BTU**")
-    st.write(f"*(αναμενόμενη μέγιστη ισχύς **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς)*")
+        st.subheader("Ανάλυση Φορτίου")
+        for label, watts in breakdown.items():
+            if mode == "θέρμανση" and label in ["Ηλιακό", "Εσωτερικά"]: continue
+            st.write(f"**{label}:** + {watts/1000:.2f} kW")
 
-    # --- Breakdown ---
-    st.subheader("Ανάλυση Απωλειών")
-    cols = st.columns(2)
-    for i, (label, value) in enumerate(breakdown.items()):
-        if mode == "θέρμανση" and label in ["Ηλιακό", "Εσωτερικά"]: continue
-        cols[i % 2].metric(label, f"{value/1000:.2f} kW")
-    
-    st.markdown("---")
-    st.caption("**Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση.")
+        if περιστασιακή or αθόρυβη or βόρειος:
+            st.warning("⚠️ Τα αποτελέσματα έχουν προσαυξηθεί βάσει των επιλογών περιστασιακής, αθόρυβης λειτουργίας ή βόρειου προσανατολισμού.")
+
+        st.subheader("Σύνοψη Δεδομένων & Αποτελεσμάτων")
+        report = f"""ΑΝΑΦΟΡΑ ΕΝΕΡΓΕΙΑΚΩΝ ΑΠΑΙΤΗΣΕΩΝ (Λειτουργία: {mode.upper()})
+--------------------------------------------------
+ΚΛΙΜΑΤΙΚΕΣ ΣΥΝΘΗΚΕΣ:
+- Θερμοκρασία: Εσωτ. {εσωτερική}°C / Εξωτ. {εξωτερική}°C
+- Ζώνη ΚΕΝΑΚ: {kenak_zone}
+- Ηλιακή Έκθεση: {ηλιακή_έκθεση_label}
+
+ΠΕΡΙΓΡΑΦΗ ΧΩΡΟΥ:
+- Χώρος: {τύπος} ({επιφάνεια}m² / {ύψος}m ύψος)
+- Έτος Κατασκευής: {έτος}
+- Δάπεδο: {δάπεδο}
+- Βόρειος Προσανατολισμός: {"Ναι" if βόρειος else "Όχι"}
+
+ΔΟΜΙΚΑ ΣΤΟΙΧΕΙΑ:
+- Μόνωση: {μόνωση}
+- Εξωτερικοί Τοίχοι: {εξωτερικοί}
+- Οροφή: {οροφή}
+- Κουφώματα: {κουφώματα}
+- Αεροστεγανότητα: {αεροστεγανότητα}
+
+ΣΥΝΗΘΕΙΕΣ ΧΡΗΣΗΣ:
+- Περιστασιακή Χρήση: {"Ναι" if περιστασιακή else "Όχι"}
+- Αθόρυβη Λειτουργία: {"Ναι" if αθόρυβη else "Όχι"}
+
+--------------------------------------------------
+ΤΕΛΙΚΟ ΑΠΟΤΕΛΕΣΜΑ: {load_btu:.0f} BTU/h ({kw:.2f} kW)
+Προτεινόμενο Εύρος: {load_btu*0.85:.0f} - {load_btu*1.15:.0f} BTU/h
+--------------------------------------------------"""
+        st.code(report, language="text")
+
+        st.markdown("---")
+        st.caption("""
+        **Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση βάσει των δεδομένων που εισήχθησαν και προορίζεται για ενημερωτική χρήση. Για την οριστική μελέτη, απαιτείται αυτοψία και συμβουλή από αδειούχο μηχανολόγο.
+        """)
+
+    except Exception as e:
+        st.error(f"Σφάλμα: {e}")
