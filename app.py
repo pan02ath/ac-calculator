@@ -101,27 +101,20 @@ def υπολογισμός(d, mode):
     infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
+    # --- HEAT LOSS CALCULATION (Load) ---
     if mode == "θέρμανση":
         total = (transmission + infiltration)
-        if d.get("βόρειος"): total *= 1.15
+        if d.get("βόρειος"): total *= 1.15  # Northern orientation affects physical losses
         total *= 1.10 
     else:
         total = transmission + infiltration + solar_gain + roof_solar + internal
         if "Ζώνη Α" in d["kenak_label"]: total *= 1.07
         elif "Ζώνη Β" in d["kenak_label"]: total *= 1.04
 
-    if d.get("περιστασιακή"):
-        if d["έτος"] == "πριν_1980": penalty = 1.35
-        elif d["έτος"] == "1980_2000": penalty = 1.28
-        else: penalty = 1.22
-        total *= penalty
-        
-    if d.get("αθόρυβη"): total *= 1.20
-
     total = max(total, 0)
     load_btu = total * 3.412
     
-    # --- SOFTENED CAPACITY DERATING LOGIC ---
+    # --- NOMINAL UNIT SELECTION LOGIC (Penalties applied here) ---
     f_derating = 1.0
     temp = d["εξωτερική"]
     if mode == "θέρμανση":
@@ -136,6 +129,14 @@ def υπολογισμός(d, mode):
         else: f_derating = 0.90
     
     nominal_btu_needed = load_btu / f_derating
+
+    # Penalties for Intermittent/Silent use affect the unit size, not the heat losses
+    if d.get("περιστασιακή"):
+        penalty = 1.35 if d["έτος"] == "πριν_1980" else 1.28 if d["έτος"] == "1980_2000" else 1.22
+        nominal_btu_needed *= penalty
+        
+    if d.get("αθόρυβη"): 
+        nominal_btu_needed *= 1.20
 
     breakdown = {
         "Τοίχοι": (U_wall * effective_wall_area * ΔΤ), "Οροφή": (U_roof * roof_area * ΔΤ),
@@ -236,7 +237,6 @@ if st.button("Υπολογισμός"):
         st.success(f"**Απαιτούμενη Ισχύς:** {kw:.2f} kW  |  {load_btu:.0f} BTU/h")
         st.info(f"**Προτεινόμενο Εύρος (±15%):** {load_btu*0.85:.0f} – {load_btu*1.15:.0f} BTU/h")
         
-        # --- THE REQUESTED LINES ---
         st.info(f"**Συνιστώμενη ονομαστική ισχύς κλιματιστικού: {commercial_range} BTU**")
         st.write(f"*(αναμενόμενη μέγιστη ισχύς **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς)*")
 
@@ -245,8 +245,10 @@ if st.button("Υπολογισμός"):
             if mode == "θέρμανση" and label in ["Ηλιακό", "Εσωτερικά"]: continue
             st.write(f"**{label}:** + {watts/1000:.2f} kW")
 
-        if περιστασιακή or αθόρυβη or βόρειος:
-            st.warning("⚠️ Τα αποτελέσματα έχουν προσαυξηθεί βάσει των επιλογών περιστασιακής, αθόρυβης λειτουργίας ή βόρειου προσανατολισμού.")
+        if βόρειος:
+            st.warning("⚠️ Τα αποτελέσματα των απωλειών έχουν προσαυξηθεί λόγω βόρειου προσανατολισμού.")
+        if περιστασιακή or αθόρυβη:
+            st.warning("⚠️ Η προτεινόμενη μονάδα έχει προσαυξηθεί βάσει των επιλογών περιστασιακής ή αθόρυβης λειτουργίας.")
 
         st.subheader("Σύνοψη Δεδομένων & Αποτελεσμάτων")
         report = f"""ΑΝΑΦΟΡΑ ΕΝΕΡΓΕΙΑΚΩΝ ΑΠΑΙΤΗΣΕΩΝ (Λειτουργία: {mode.upper()})
@@ -274,8 +276,8 @@ if st.button("Υπολογισμός"):
 - Αθόρυβη Λειτουργία: {"Ναι" if αθόρυβη else "Όχι"}
 
 --------------------------------------------------
-ΤΕΛΙΚΟ ΑΠΟΤΕΛΕΣΜΑ: {load_btu:.0f} BTU/h ({kw:.2f} kW)
-Προτεινόμενο Εύρος: {load_btu*0.85:.0f} - {load_btu*1.15:.0f} BTU/h
+ΘΕΡΜΙΚΕΣ ΑΠΩΛΕΙΕΣ: {load_btu:.0f} BTU/h ({kw:.2f} kW)
+Προτεινόμενο Εύρος Απωλειών: {load_btu*0.85:.0f} - {load_btu*1.15:.0f} BTU/h
 --------------------------------------------------"""
         st.code(report, language="text")
 
