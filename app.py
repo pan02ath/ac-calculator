@@ -127,20 +127,20 @@ def υπολογισμός(d, mode):
     total = max(total, 0)
     load_btu = total * 3.412
 
-    # --- CAPACITY DERATING LOGIC ---
+    # --- SOFTENED CAPACITY DERATING LOGIC (Targeting Max Capacity) ---
     f_derating = 1.0
     temp = d["εξωτερική"]
 
     if mode == "θέρμανση":
         if temp >= 7: f_derating = 1.0
-        elif 4 <= temp < 7: f_derating = 0.92
-        elif 0 <= temp < 4: f_derating = 0.82
-        elif -7 <= temp < 0: f_derating = 0.68
-        else: f_derating = 0.55
+        elif 4 <= temp < 7: f_derating = 0.96
+        elif 0 <= temp < 4: f_derating = 0.88
+        elif -7 <= temp < 0: f_derating = 0.75
+        else: f_derating = 0.65
     else:
         if temp <= 35: f_derating = 1.0
-        elif 35 < temp <= 40: f_derating = 0.95
-        else: f_derating = 0.85
+        elif 35 < temp <= 40: f_derating = 0.97
+        else: f_derating = 0.90
 
     nominal_btu_needed = load_btu / f_derating
 
@@ -243,15 +243,15 @@ if st.button("Υπολογισμός"):
         st.divider()
         st.success(f"**Απαιτούμενο Θερμικό Φορτίο: {load_btu:.0f} BTU/h**")
         st.info(f"**Συνιστώμενη ονομαστική ισχύς κλιματιστικού: {commercial_range} BTU**")
-        st.write(f"*(αναμενόμενη απόδοση **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς κελσίου)*")
+        st.write(f"*(αναμενόμενη μέγιστη ισχύς **{load_btu:.0f} BTU/h** στους **{εξωτερική}** βαθμούς)*")
 
         st.subheader("Ανάλυση Φορτίου")
         for label, watts in breakdown.items():
             if mode == "θέρμανση" and label in ["Ηλιακό", "Εσωτερικά"]: continue
             st.write(f"**{label}:** + {watts/1000:.2f} kW")
 
-        if f_derating < 0.90:
-            st.warning(f"⚠️ Λόγω της εξωτερικής θερμοκρασίας ({εξωτερική}°C), η ονομαστική απόδοση της μονάδας μειώνεται. Η πρόταση αφορά μηχάνημα που μπορεί να καλύψει το φορτίο υπό αυτές τις συνθήκες.")
+        if f_derating < 1.0:
+            st.warning(f"💡 Σημείωση: Λόγω της εξωτερικής θερμοκρασίας ({εξωτερική}°C), η απόδοση μειώνεται. Η πρόταση αφορά μονάδα που μπορεί να καλύψει το φορτίο στη μέγιστη λειτουργία της.")
 
         st.markdown("---")
         st.caption("**Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση. Για την οριστική μελέτη, απαιτείται αυτοψία από μηχανολόγο.")
