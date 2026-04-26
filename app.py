@@ -128,7 +128,7 @@ def υπολογισμός(d, mode):
     breakdown = {
         "Τοίχοι": (U_wall * effective_wall_area * ΔΤ), "Οροφή": (U_roof * roof_area * ΔΤ),
         "Δάπεδο": (U_floor * floor_area * ΔΤ), "Ανοίγματα": window_loss, "Αεροδιείσδυση": infiltration,
-        "Ηλιακό": (solar_gain + roof_solar) if mode == "ψύξη" else 0,
+        "Ήλιος": (solar_gain + roof_solar) if mode == "ψύξη" else 0,
         "Εσωτερικά": internal if mode == "ψύξη" else 0,
     }
     return total / 1000, load_btu, nominal_btu_needed, breakdown, f_derating
