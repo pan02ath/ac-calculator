@@ -279,7 +279,7 @@ if st.button("Υπολογισμός"):
 
         # ── Επιλογή μεγέθους μονάδας ───────────────────────────────────────
         st.divider()
-        st.subheader("Επιλογή μεγέθους κλιματιστικής μονάδας")
+        st.subheader("Επιλογή μεγέθους κλιματιστικού")
 
         derating_pct = (1 - f_derating) * 100
         st.write(
@@ -290,7 +290,7 @@ if st.button("Υπολογισμός"):
 
         if unit_penalty_factors:
             st.info(
-                f"**Βασική σύσταση μονάδας (χωρίς προτίμηση χρήσης):** {commercial_range_base} BTU"
+                f"**Βασική σύσταση (χωρίς προτιμήσεις χρήσης):** {commercial_range_base} BTU"
             )
             st.warning("**Προσαυξήσεις λόγω προτιμήσεων χρήσης** *(επηρεάζουν μόνο το μέγεθος μονάδας, όχι τις απώλειες)*:")
             for reason, factor in unit_penalty_factors.items():
@@ -350,13 +350,13 @@ if st.button("Υπολογισμός"):
 --------------------------------------------------
 ΑΠΟΤΕΛΕΣΜΑΤΑ
 
-Φορτίο αιχμής (πραγματικές απώλειες): {load_btu:.0f} BTU/h ({kw:.2f} kW)
+Φορτίο αιχμής (απώλειες): {load_btu:.0f} BTU/h ({kw:.2f} kW)
 Μείωση απόδοσης μονάδας στους {εξωτερική}°C: -{derating_pct:.0f}%
-Βασική ονομαστική ισχύς (χωρίς προτιμήσεις): {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
+Βασική ονομαστική ισχύς (χωρίς προτιμήσεις χρήσεως): {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
 
 Προσαυξήσεις μεγέθους μονάδας λόγω προτιμήσεων χρήσης:
 {unit_penalty_lines}
-Τελική ονομαστική ισχύς (με προτιμήσεις): {nominal_btu_final:,.0f} BTU/h → {commercial_range_final} BTU
+Τελική ονομαστική ισχύς (με προτιμήσεις χρήσεως): {nominal_btu_final:,.0f} BTU/h → {commercial_range_final} BTU
 --------------------------------------------------"""
         st.code(report, language="text")
 
