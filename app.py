@@ -179,7 +179,7 @@ mode = st.radio("Λειτουργία", ["ψύξη", "θέρμανση"])
 if "last_mode" not in st.session_state or st.session_state.last_mode != mode:
     st.session_state.last_mode = mode
     if mode == "ψύξη":
-        st.session_state.tin, st.session_state.tout = 25, 35
+        st.session_state.tin, st.session_state.tout = 24, 38
     else:
         st.session_state.tin, st.session_state.tout = 21, 5
 
