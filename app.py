@@ -268,10 +268,7 @@ if st.button("Υπολογισμός"):
         st.divider()
 
         # ── Ενεργειακές απώλειες / φορτίο αιχμής ──────────────────────────
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Φορτίο αιχμής", f"{kw:.2f} kW")
-        col2.metric("BTU/h", f"{load_btu:,.0f}")
-        col3.metric("Σύσταση μονάδας", f"{commercial_range_final} BTU")
+        st.success(f"**Φορτίο αιχμής:** {kw:.2f} kW | {load_btu:.0f} BTU/h")
         st.info(f"**Εύρος απωλειών (±15%):** {load_btu*0.85:.0f} – {load_btu*1.15:.0f} BTU/h")
 
         st.subheader("Ανάλυση φορτίου αιχμής")
