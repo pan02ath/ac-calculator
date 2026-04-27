@@ -52,8 +52,8 @@ def get_commercial_range(nominal_btu_val):
     if not suitable_sizes:
         return f"{COMMERCIAL_SIZES[-1]}000+"
     idx = COMMERCIAL_SIZES.index(suitable_sizes[0])
-    if idx + 1 < len(COMMERCIAL_SIZES):
-        return f"{COMMERCIAL_SIZES[idx] * 1000:,} – {COMMERCIAL_SIZES[idx+1] * 1000:,}"
+    if idx > 0:
+        return f"{COMMERCIAL_SIZES[idx-1] * 1000:,} – {COMMERCIAL_SIZES[idx] * 1000:,}"
     return f"{COMMERCIAL_SIZES[idx] * 1000:,}"
 
 # =========================================================
@@ -240,7 +240,7 @@ with c9:
 st.header("Συνήθης χρήση κλιματιστικού")
 περιστασιακή = st.checkbox(
     "Προτιμάτε περιστασιακή χρήση;",
-    help="Αν ο χώρος θερμαίνεται/ψύχεται περιστασιακά, η μονάδα πρέπει επιτυγχάνει ταχύτερα την επιθυμητή θερμοκρασία."
+    help="Αν ο χώρος θερμαίνεται/ψύχεται μόνο κατά διαστήματα, η μονάδα πρέπει να καλύπτει γρήγορη ανάκτηση."
 )
 αθόρυβη = st.checkbox(
     "Προτιμάτε αθόρυβη λειτουργία (χαμηλή ταχύτητα ανεμιστήρα);",
@@ -275,13 +275,7 @@ if st.button("Υπολογισμός"):
         for label, watts in breakdown.items():
             if watts == 0:
                 continue
-            prefix = "⚠️ " if label == "Βόρειος προσανατολισμός" else ""
-            st.write(f"{prefix}**{label}:** {watts/1000:.2f} kW")
-        if βόρειος:
-            st.warning(
-                "⚠️ **Βόρειος προσανατολισμός:** Η απουσία ηλιακών κερδών αυξάνει τις ενεργειακές "
-                "απώλειες κατά **+15%** και συνυπολογίζεται στο φορτίο αιχμής."
-            )
+            st.write(f"**{label}:** {watts/1000:.2f} kW")
 
         # ── Επιλογή μεγέθους μονάδας ───────────────────────────────────────
         st.divider()
@@ -302,12 +296,12 @@ if st.button("Υπολογισμός"):
             for reason, factor in unit_penalty_factors.items():
                 explanation = {
                     "Περιστασιακή χρήση": (
-                        f"Η μονάδα πρέπει να επιτυγχάνει γρήγορα την επιθυμητή θερμοκρασία "
-                        f"σε έναν μη-κλιματιζόμενο χώρο → ×{factor:.2f}"
+                        f"Η μονάδα πρέπει να ανακτά γρήγορα τη θερμοκρασία από "
+                        f"μη-κλιματιζόμενες συνθήκες → ×{factor:.2f}"
                     ),
                     "Αθόρυβη/χαμηλή ταχύτητα": (
-                        f"Σε χαμηλή ταχύτητα η απόδοση μειώνεται. "
-                        f"Χρειάζεται μονάδα μεγαλύτερης ισχύος. → ×{factor:.2f}"
+                        f"Σε χαμηλή ταχύτητα η πραγματική απόδοση μειώνεται· "
+                        f"μεγαλύτερη μονάδα διατηρεί άνεση χωρίς να τρέχει σε υψηλή → ×{factor:.2f}"
                     ),
                 }.get(reason, f"×{factor:.2f}")
                 st.write(f"- **{reason}:** {explanation}")
@@ -358,7 +352,7 @@ if st.button("Υπολογισμός"):
 
 Φορτίο αιχμής (πραγματικές απώλειες): {load_btu:.0f} BTU/h ({kw:.2f} kW)
 Μείωση απόδοσης μονάδας στους {εξωτερική}°C: -{derating_pct:.0f}%
-Βασική ονομαστική ισχύς: {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
+Βασική ονομαστική ισχύς (χωρίς προτιμήσεις): {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
 
 Προσαυξήσεις μεγέθους μονάδας λόγω προτιμήσεων χρήσης:
 {unit_penalty_lines}
