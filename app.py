@@ -358,7 +358,7 @@ if st.button("Υπολογισμός"):
 
 Φορτίο αιχμής (πραγματικές απώλειες): {load_btu:.0f} BTU/h ({kw:.2f} kW)
 Μείωση απόδοσης μονάδας στους {εξωτερική}°C: -{derating_pct:.0f}%
-Βασική ονομαστική ισχύς (χωρίς προτιμήσεις): {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
+Βασική ονομαστική ισχύς: {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
 
 Προσαυξήσεις μεγέθους μονάδας λόγω προτιμήσεων χρήσης:
 {unit_penalty_lines}
