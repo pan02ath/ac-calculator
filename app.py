@@ -261,42 +261,40 @@ with c1:
     εξωτερική = st.number_input("Εξωτερική Θερμοκρασία (°C)", value=st.session_state.tout)
 
 # ── KENAK zone selection (prefecture + altitude) ────────
-with c2:
-    νομός = st.selectbox(
-        "Νομός / Περιοχή",
-        list(ΝΟΜΟΙ_ΖΩΝΗ.keys()),
-        help="Επιλέξτε τον νομό ή την περιοχή του ακινήτου."
-    )
-    υψόμετρο_500 = st.checkbox(
-        "Υψόμετρο > 500 μέτρα",
-        help=(
-            "Σύμφωνα με τον ΚΕΝΑΚ, περιοχές με υψόμετρο άνω των 500 μ. "
-            "εντάσσονται στην επόμενη ψυχρότερη κλιματική ζώνη "
-            "(π.χ. Ζώνη Β → Ζώνη Γ). Η Ζώνη Δ παραμένει Δ ανεξαρτήτως υψομέτρου."
-        )
-    )
-
-# Compute effective KENAK zone
-base_zone, effective_zone, βάση_val = compute_kenak_zone(νομός, υψόμετρο_500)
-kenak_zone_label = f"Ζώνη {effective_zone}"  # e.g. "Ζώνη Γ"
-
-# Show the determined zone to the user
-if υψόμετρο_500 and base_zone != effective_zone:
-    st.info(
-        f"📍 **{νομός}** — βασική ζώνη: **{base_zone}** → "
-        f"λόγω υψομέτρου >500 μ., εφαρμόζεται **Ζώνη {effective_zone}** (ΚΕΝΑΚ)"
-    )
-else:
-    st.info(f"📍 **{νομός}** — Κλιματική ζώνη ΚΕΝΑΚ: **Ζώνη {effective_zone}**")
-
-# Solar exposure (cooling only)
 ηλιακή_έκθεση_val, ηλιακή_έκθεση_label = 1.0, "N/A"
+βάση_val, kenak_zone_label = 210, "N/A"
+νομός, υψόμετρο_500 = "N/A", False
+base_zone, effective_zone = "N/A", "N/A"
 
 if mode == "ψύξη":
-    ηλιακή_έκθεση_label = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
-    ηλιακή_έκθεση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση_label]
+    with c2:
+        νομός = st.selectbox(
+            "Νομός / Περιοχή",
+            list(ΝΟΜΟΙ_ΖΩΝΗ.keys()),
+            help="Επιλέξτε τον νομό ή την περιοχή του ακινήτου."
+        )
+        υψόμετρο_500 = st.checkbox(
+            "Υψόμετρο > 500 μέτρα",
+            help=(
+                "Σύμφωνα με τον ΚΕΝΑΚ, περιοχές με υψόμετρο άνω των 500 μ. "
+                "εντάσσονται στην επόμενη ψυχρότερη κλιματική ζώνη "
+                "(π.χ. Ζώνη Β → Ζώνη Γ). Η Ζώνη Δ παραμένει Δ ανεξαρτήτως υψομέτρου."
+            )
+        )
+        base_zone, effective_zone, βάση_val = compute_kenak_zone(νομός, υψόμετρο_500)
+        kenak_zone_label = f"Ζώνη {effective_zone}"
+        if υψόμετρο_500 and base_zone != effective_zone:
+            st.info(
+                f"📍 **{νομός}** — βασική ζώνη: **{base_zone}** → "
+                f"λόγω υψομέτρου >500 μ., εφαρμόζεται **Ζώνη {effective_zone}** (ΚΕΝΑΚ)"
+            )
+        else:
+            st.info(f"📍 **{νομός}** — Κλιματική ζώνη ΚΕΝΑΚ: **Ζώνη {effective_zone}**")
+        ηλιακή_έκθεση_label = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
+        ηλιακή_έκθεση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση_label]
 else:
-    st.info("Σε λειτουργία θέρμανσης, τα ηλιακά κέρδη παραλείπονται για τον υπολογισμό φορτίου αιχμής.")
+    with c2:
+        st.info("Σε λειτουργία θέρμανσης, τα ηλιακά κέρδη παραλείπονται για τον υπολογισμό φορτίου αιχμής.")
 
 st.header("Περιγραφή χώρου")
 c3, c4 = st.columns(2)
