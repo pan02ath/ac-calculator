@@ -14,7 +14,7 @@ has_cooling  = "hvac_inputs_cooling"  in st.session_state
 if not has_heating and not has_cooling:
     st.warning(
         "Παρακαλώ εκτελέστε πρώτα το εργαλείο υπολογισμού απωλειών (σελίδα 1) — "
-        "τα στοιχεία του χώρου θα φορτωθούν αυτόματα εδώ."
+        "τα δεομένα θα εισαχθούν αυτόματα εδώ."
     )
     st.stop()
 
