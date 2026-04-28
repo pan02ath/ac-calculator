@@ -120,45 +120,100 @@ kw_at_cool_design = float(np.interp(t_cool_design, temps, cool_loads))
 # ── Plot ──────────────────────────────────────────────────────────────
 fig = go.Figure()
 
+# --- Masks for relevant regions ---
+heat_mask = temps <= t_heat_in
+cool_mask = temps >= t_cool_in
+
+# --- Background zones ---
+# Heating zone
+fig.add_vrect(
+    x0=t_min, x1=t_heat_in,
+    fillcolor="blue", opacity=0.05, line_width=0
+)
+
+# Comfort zone
+fig.add_vrect(
+    x0=t_heat_in, x1=t_cool_in,
+    fillcolor="green", opacity=0.05, line_width=0
+)
+
+# Cooling zone
+fig.add_vrect(
+    x0=t_cool_in, x1=t_max,
+    fillcolor="red", opacity=0.05, line_width=0
+)
+
+# --- Curves (clipped) ---
 fig.add_trace(go.Scatter(
-    x=temps, y=heat_loads,
-    name="Φορτίο θέρμανσης (kW)", mode="lines",
+    x=temps[heat_mask],
+    y=heat_loads[heat_mask],
+    name="🔵 Θέρμανση (όσο πέφτει η θερμοκρασία)",
+    mode="lines",
     line=dict(color="#1f77b4", width=2)
 ))
+
 fig.add_trace(go.Scatter(
-    x=temps, y=cool_loads,
-    name="Φορτίο ψύξης (kW)", mode="lines",
+    x=temps[cool_mask],
+    y=cool_loads[cool_mask],
+    name="🔴 Ψύξη (όσο ανεβαίνει η θερμοκρασία)",
+    mode="lines",
     line=dict(color="#d62728", width=2)
 ))
 
-for t_bal, kw_bal in balance_points:
-    fig.add_vline(x=t_bal, line=dict(color="gray", dash="dot", width=1))
-    fig.add_annotation(
-        x=t_bal, y=kw_bal,
-        text=f"Σημείο ισορροπίας {t_bal:.1f}°C",
-        showarrow=True, arrowhead=2,
-        font=dict(size=11, color="gray"),
-        bgcolor="white"
+# --- Design points (emphasized) ---
+fig.add_trace(go.Scatter(
+    x=[t_heat_design],
+    y=[kw_at_heat_design],
+    mode="markers+text",
+    text=[f"{pct}% θέρμανση"],
+    textposition="top center",
+    marker=dict(size=10, color="#1f77b4"),
+    showlegend=False
+))
+
+fig.add_trace(go.Scatter(
+    x=[t_cool_design],
+    y=[kw_at_cool_design],
+    mode="markers+text",
+    text=[f"{pct}% ψύξη"],
+    textposition="top center",
+    marker=dict(size=10, color="#d62728"),
+    showlegend=False
+))
+
+# --- Design vertical lines (keep but lighter emphasis) ---
+fig.add_vline(
+    x=t_heat_design,
+    line=dict(color="#1f77b4", dash="dash", width=1)
+)
+
+fig.add_vline(
+    x=t_cool_design,
+    line=dict(color="#d62728", dash="dash", width=1)
+)
+
+# --- Single balance point (if exists) ---
+if balance_points:
+    # pick the one closest to comfort zone center
+    mid = (t_heat_in + t_cool_in) / 2
+    t_bal, kw_bal = min(balance_points, key=lambda x: abs(x[0] - mid))
+
+    fig.add_trace(go.Scatter(
+        x=[t_bal],
+        y=[kw_bal],
+        mode="markers+text",
+        text=["Σημείο ισορροπίας"],
+        textposition="bottom center",
+        marker=dict(size=9, color="black"),
+        showlegend=False
+    ))
+
+    fig.add_vline(
+        x=t_bal,
+        line=dict(color="gray", dash="dot", width=1)
     )
 
-fig.add_vline(x=t_heat_design, line=dict(color="#1f77b4", dash="dash", width=1.5))
-fig.add_annotation(
-    x=t_heat_design, y=kw_at_heat_design,
-    text=f"{pct}% κάλυψη θέρμανσης<br>{t_heat_design:.1f}°C → {kw_at_heat_design:.2f} kW",
-    showarrow=True, arrowhead=2,
-    font=dict(size=11, color="#1f77b4"),
-    bgcolor="white"
-)
-
-fig.add_vline(x=t_cool_design, line=dict(color="#d62728", dash="dash", width=1.5))
-fig.add_annotation(
-    x=t_cool_design, y=kw_at_cool_design,
-    text=f"{pct}% κάλυψη ψύξης<br>{t_cool_design:.1f}°C → {kw_at_cool_design:.2f} kW",
-    showarrow=True, arrowhead=2,
-    font=dict(size=11, color="#d62728"),
-    bgcolor="white"
-)
-
+# --- Layout ---
 fig.update_layout(
     xaxis_title="Εξωτερική θερμοκρασία (°C)",
     yaxis_title="Φορτίο (kW)",
