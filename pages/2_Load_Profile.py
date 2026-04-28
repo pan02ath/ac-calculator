@@ -213,7 +213,7 @@ with c8:
         f"{kw_at_cool_design:.2f} kW",
         f"{kw_at_cool_design * 3412:.0f} BTU/h"
     )
-    st.caption(f"στους: {t_cool_design:.1f}°C")
+    st.caption(f"στους {t_cool_design:.1f}°C")
 
 governing = max(kw_at_heat_design, kw_at_cool_design)
 governing_btu = governing * 3412
