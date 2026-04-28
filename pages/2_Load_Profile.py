@@ -24,7 +24,7 @@ base.setdefault("ηλιακή_έκθεση", 1.0)
 base.setdefault("kenak_label", "Ζώνη Β")
 
 # ── Indoor setpoints ─────────────────────────────────────────────────
-st.header("Θερμοκρασίες εσωτερικού")
+st.header("Επιθυμητή εσωτερική θερμοκρασία")
 c1, c2 = st.columns(2)
 with c1:
     t_heat_in = st.number_input("Setpoint θέρμανσης (°C)", value=21)
