@@ -206,14 +206,14 @@ with c7:
         f"{kw_at_heat_design:.2f} kW",
         f"{kw_at_heat_design * 3412:.0f} BTU/h"
     )
-    st.caption(f"Θερμοκρασία σχεδιασμού: {t_heat_design:.1f}°C")
+    st.caption(f"στους {t_heat_design:.1f}°C")
 with c8:
     st.metric(
         "Μέγιστο φορτίο ψύξης",
         f"{kw_at_cool_design:.2f} kW",
         f"{kw_at_cool_design * 3412:.0f} BTU/h"
     )
-    st.caption(f"Θερμοκρασία σχεδιασμού: {t_cool_design:.1f}°C")
+    st.caption(f"στους: {t_cool_design:.1f}°C")
 
 governing = max(kw_at_heat_design, kw_at_cool_design)
 governing_btu = governing * 3412
