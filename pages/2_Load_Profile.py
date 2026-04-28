@@ -15,7 +15,34 @@ if "hvac_inputs" not in st.session_state:
     )
     st.stop()
 
-base = dict(st.session_state["hvac_inputs"])
+has_heating = "hvac_inputs_heating" in st.session_state
+has_cooling  = "hvac_inputs_cooling"  in st.session_state
+
+if not has_heating and not has_cooling:
+    st.warning(
+        "Παρακαλώ υπολογίστε πρώτα τις βασικές απώλειες (σελίδα 1) — "
+        "τα δεδομένα του χώρου θα εμφανιστούν αυτόματα εδώ."
+    )
+    st.stop()
+
+if has_heating and has_cooling:
+    st.success("Έγινε εισαγωγή των στοιχείων για θέρμανση και ψύξη.")
+elif has_heating:
+    st.info("Έγινε εισαγωγή στοιχείων μόνο για την λειτουργία θέρμανσης. Εκτελέστε τους υπολογισμούς και για την λειτουργία ψύξης.")
+else:
+    st.info("Έγινε εισαγωγή στοιχείων μόνο για την λειτουργία ψύξης. Εκτελέστε τους υπολογισμούς και για την λειτουργία θέρμανσης.")
+
+# Use heating inputs as structural base (walls, floor, roof, windows etc.)
+# Fall back to cooling inputs if heating hasn't been run yet
+base_heating = st.session_state.get("hvac_inputs_heating",
+               st.session_state.get("hvac_inputs_cooling"))
+base_cooling  = st.session_state.get("hvac_inputs_cooling",
+               st.session_state.get("hvac_inputs_heating"))
+
+# Ensure cooling-specific keys are present
+base_cooling.setdefault("βάση_ακτινοβολίας", 210)
+base_cooling.setdefault("ηλιακή_έκθεση", 1.0)
+base_cooling.setdefault("kenak_label", "Ζώνη Β")
 
 # Ensure cooling-specific keys have fallback values
 # (in case the user ran the main tool in heating mode)
@@ -89,11 +116,17 @@ temps = np.arange(t_min, t_max + 0.5, 0.5)
 
 heat_loads, cool_loads = [], []
 for t in temps:
-    dh = dict(base)
+    dh = dict(base_heating)
     dh["εσωτερική"] = t_heat_in
     dh["εξωτερική"] = float(t)
     kw, *_ = υπολογισμός(dh, "θέρμανση")
     heat_loads.append(kw)
+
+    dc = dict(base_cooling)
+    dc["εσωτερική"] = t_cool_in
+    dc["εξωτερική"] = float(t)
+    kw, *_ = υπολογισμός(dc, "ψύξη")
+    cool_loads.append(kw)
 
     dc = dict(base)
     dc["εσωτερική"] = t_cool_in
