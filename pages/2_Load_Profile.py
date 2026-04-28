@@ -8,47 +8,34 @@ from utils import υπολογισμός, get_commercial_range
 st.set_page_config(page_title="Load Profile vs Temperature", layout="centered")
 st.title("Προφίλ φορτίου ανά θερμοκρασία περιβάλλοντος")
 
-if "hvac_inputs" not in st.session_state:
+has_heating = "hvac_inputs_heating" in st.session_state
+has_cooling  = "hvac_inputs_cooling"  in st.session_state
+
+if not has_heating and not has_cooling:
     st.warning(
         "Παρακαλώ εκτελέστε πρώτα τον κύριο υπολογιστή (σελίδα 1) — "
         "τα στοιχεία του χώρου θα φορτωθούν αυτόματα εδώ."
     )
     st.stop()
 
-has_heating = "hvac_inputs_heating" in st.session_state
-has_cooling  = "hvac_inputs_cooling"  in st.session_state
-
-if not has_heating and not has_cooling:
-    st.warning(
-        "Παρακαλώ υπολογίστε πρώτα τις βασικές απώλειες (σελίδα 1) — "
-        "τα δεδομένα του χώρου θα εμφανιστούν αυτόματα εδώ."
-    )
-    st.stop()
-
 if has_heating and has_cooling:
     st.success("Έγινε εισαγωγή των στοιχείων για θέρμανση και ψύξη.")
 elif has_heating:
-    st.info("Έγινε εισαγωγή στοιχείων μόνο για την λειτουργία θέρμανσης. Εκτελέστε τους υπολογισμούς και για την λειτουργία ψύξης.")
+    st.info("Φορτωμένα μόνο στοιχεία θέρμανσης. Εκτελέστε τον υπολογιστή και σε λειτουργία ψύξης για πλήρες διάγραμμα.")
 else:
-    st.info("Έγινε εισαγωγή στοιχείων μόνο για την λειτουργία ψύξης. Εκτελέστε τους υπολογισμούς και για την λειτουργία θέρμανσης.")
+    st.info("Φορτωμένα μόνο στοιχεία ψύξης. Εκτελέστε τον υπολογιστή και σε λειτουργία θέρμανσης για πλήρες διάγραμμα.")
 
-# Use heating inputs as structural base (walls, floor, roof, windows etc.)
-# Fall back to cooling inputs if heating hasn't been run yet
 base_heating = st.session_state.get("hvac_inputs_heating",
                st.session_state.get("hvac_inputs_cooling"))
 base_cooling  = st.session_state.get("hvac_inputs_cooling",
                st.session_state.get("hvac_inputs_heating"))
 
-# Ensure cooling-specific keys are present
+base_cooling = dict(base_cooling)
+base_heating = dict(base_heating)
+
 base_cooling.setdefault("βάση_ακτινοβολίας", 210)
 base_cooling.setdefault("ηλιακή_έκθεση", 1.0)
 base_cooling.setdefault("kenak_label", "Ζώνη Β")
-
-# Ensure cooling-specific keys have fallback values
-# (in case the user ran the main tool in heating mode)
-base.setdefault("βάση_ακτινοβολίας", 210)
-base.setdefault("ηλιακή_έκθεση", 1.0)
-base.setdefault("kenak_label", "Ζώνη Β")
 
 # ── Indoor setpoints ─────────────────────────────────────────────────
 st.header("Επιθυμητή εσωτερική θερμοκρασία")
@@ -102,14 +89,14 @@ pct = st.slider(
 )
 
 # ── Derive design temperatures from normal distribution ──────────────
-z_ref    = norm.ppf(0.10)          # −1.282
+z_ref    = norm.ppf(0.10)
 z_design = norm.ppf(1 - pct / 100)
 
 heat_std = (t_heat_mean - t_heat_p10) / abs(z_ref)
 cool_std = (t_cool_p90  - t_cool_mean) / abs(z_ref)
 
-t_heat_design = t_heat_mean + z_design * heat_std   # lower tail
-t_cool_design = t_cool_mean - z_design * cool_std   # upper tail
+t_heat_design = t_heat_mean + z_design * heat_std
+t_cool_design = t_cool_mean - z_design * cool_std
 
 # ── Build load curves ─────────────────────────────────────────────────
 temps = np.arange(t_min, t_max + 0.5, 0.5)
@@ -123,12 +110,6 @@ for t in temps:
     heat_loads.append(kw)
 
     dc = dict(base_cooling)
-    dc["εσωτερική"] = t_cool_in
-    dc["εξωτερική"] = float(t)
-    kw, *_ = υπολογισμός(dc, "ψύξη")
-    cool_loads.append(kw)
-
-    dc = dict(base)
     dc["εσωτερική"] = t_cool_in
     dc["εξωτερική"] = float(t)
     kw, *_ = υπολογισμός(dc, "ψύξη")
@@ -153,60 +134,34 @@ kw_at_cool_design = float(np.interp(t_cool_design, temps, cool_loads))
 # ── Plot ──────────────────────────────────────────────────────────────
 fig = go.Figure()
 
-# --- Masks for relevant regions ---
 heat_mask = temps <= t_heat_in
 cool_mask = temps >= t_cool_in
 
-# --- Background zones ---
-# Heating zone
-fig.add_vrect(
-    x0=t_min, x1=t_heat_in,
-    fillcolor="blue", opacity=0.05, line_width=0
-)
+fig.add_vrect(x0=t_min, x1=t_heat_in, fillcolor="blue", opacity=0.05, line_width=0)
+fig.add_vrect(x0=t_heat_in, x1=t_cool_in, fillcolor="green", opacity=0.05, line_width=0)
+fig.add_vrect(x0=t_cool_in, x1=t_max, fillcolor="red", opacity=0.05, line_width=0)
 
-# Comfort zone
-fig.add_vrect(
-    x0=t_heat_in, x1=t_cool_in,
-    fillcolor="green", opacity=0.05, line_width=0
-)
-
-# Cooling zone
-fig.add_vrect(
-    x0=t_cool_in, x1=t_max,
-    fillcolor="red", opacity=0.05, line_width=0
-)
-
-# --- Curves (clipped) ---
 fig.add_trace(go.Scatter(
-    x=temps[heat_mask],
-    y=heat_loads[heat_mask],
-    name="🔵 Θέρμανση (όσο πέφτει η θερμοκρασία)",
-    mode="lines",
+    x=temps[heat_mask], y=heat_loads[heat_mask],
+    name="Θέρμανση", mode="lines",
     line=dict(color="#1f77b4", width=2)
 ))
-
 fig.add_trace(go.Scatter(
-    x=temps[cool_mask],
-    y=cool_loads[cool_mask],
-    name="🔴 Ψύξη (όσο ανεβαίνει η θερμοκρασία)",
-    mode="lines",
+    x=temps[cool_mask], y=cool_loads[cool_mask],
+    name="Ψύξη", mode="lines",
     line=dict(color="#d62728", width=2)
 ))
 
-# --- Design points (emphasized) ---
 fig.add_trace(go.Scatter(
-    x=[t_heat_design],
-    y=[kw_at_heat_design],
+    x=[t_heat_design], y=[kw_at_heat_design],
     mode="markers+text",
     text=[f"{pct}% θέρμανση"],
     textposition="top center",
     marker=dict(size=10, color="#1f77b4"),
     showlegend=False
 ))
-
 fig.add_trace(go.Scatter(
-    x=[t_cool_design],
-    y=[kw_at_cool_design],
+    x=[t_cool_design], y=[kw_at_cool_design],
     mode="markers+text",
     text=[f"{pct}% ψύξη"],
     textposition="top center",
@@ -214,39 +169,22 @@ fig.add_trace(go.Scatter(
     showlegend=False
 ))
 
-# --- Design vertical lines (keep but lighter emphasis) ---
-fig.add_vline(
-    x=t_heat_design,
-    line=dict(color="#1f77b4", dash="dash", width=1)
-)
+fig.add_vline(x=t_heat_design, line=dict(color="#1f77b4", dash="dash", width=1))
+fig.add_vline(x=t_cool_design, line=dict(color="#d62728", dash="dash", width=1))
 
-fig.add_vline(
-    x=t_cool_design,
-    line=dict(color="#d62728", dash="dash", width=1)
-)
-
-# --- Single balance point (if exists) ---
 if balance_points:
-    # pick the one closest to comfort zone center
     mid = (t_heat_in + t_cool_in) / 2
     t_bal, kw_bal = min(balance_points, key=lambda x: abs(x[0] - mid))
-
     fig.add_trace(go.Scatter(
-        x=[t_bal],
-        y=[kw_bal],
+        x=[t_bal], y=[kw_bal],
         mode="markers+text",
         text=["Σημείο ισορροπίας"],
         textposition="bottom center",
         marker=dict(size=9, color="black"),
         showlegend=False
     ))
+    fig.add_vline(x=t_bal, line=dict(color="gray", dash="dot", width=1))
 
-    fig.add_vline(
-        x=t_bal,
-        line=dict(color="gray", dash="dot", width=1)
-    )
-
-# --- Layout ---
 fig.update_layout(
     xaxis_title="Εξωτερική θερμοκρασία (°C)",
     yaxis_title="Φορτίο (kW)",
