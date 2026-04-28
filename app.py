@@ -283,13 +283,6 @@ if mode == "ψύξη":
         )
         base_zone, effective_zone, βάση_val = compute_kenak_zone(νομός, υψόμετρο_500)
         kenak_zone_label = f"Ζώνη {effective_zone}"
-        if υψόμετρο_500 and base_zone != effective_zone:
-            st.info(
-                f"📍 **{νομός}** — βασική ζώνη: **{base_zone}** → "
-                f"λόγω υψομέτρου >500 μ., εφαρμόζεται **Ζώνη {effective_zone}** (ΚΕΝΑΚ)"
-            )
-        else:
-            st.info(f"📍 **{νομός}** — Κλιματική ζώνη ΚΕΝΑΚ: **Ζώνη {effective_zone}**")
         ηλιακή_έκθεση_label = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
         ηλιακή_έκθεση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση_label]
 else:
