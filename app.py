@@ -115,7 +115,10 @@ if st.button("Υπολογισμός"):
         commercial_range_final = get_commercial_range(nominal_btu_final)
 
         # ── Save inputs for the Load Profile page ──────────────────────────
-        st.session_state["hvac_inputs"] = d
+        st.session_state["hvac_inputs"] = {
+            **st.session_state.get("hvac_inputs", {}),
+            **d
+        }
 
         st.divider()
 
