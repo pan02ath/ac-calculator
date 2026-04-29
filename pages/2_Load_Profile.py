@@ -73,6 +73,9 @@ st.caption(
 )
 
 c5, c6 = st.columns(2)
+default_t_heat_out = base_heating.get("εξωτερική", 1)
+default_t_cool_out = base_cooling.get("εξωτερική", 38)
+
 with c5:
     st.subheader("Χειμώνας")
     t_heat_mean = st.number_input(
@@ -80,7 +83,7 @@ with c5:
         help="Η πιο συνηθισμένη εξωτερική θερμοκρασία τον χειμώνα."
     )
     t_heat_p10 = st.number_input(
-        "Ψυχρότερο 10% χειμερινών ωρών (°C)", value=1,
+        "Ψυχρότερο 10% χειμερινών ωρών (°C)", value=int(default_t_heat_out),
         help="Η θερμοκρασία κάτω από την οποία βρίσκεστε μόνο ~10% των χειμερινών ωρών."
     )
 with c6:
@@ -90,7 +93,7 @@ with c6:
         help="Η πιο συνηθισμένη εξωτερική θερμοκρασία το καλοκαίρι."
     )
     t_cool_p90 = st.number_input(
-        "Θερμότερο 10% καλοκαιρινών ωρών (°C)", value=38,
+        "Θερμότερο 10% καλοκαιρινών ωρών (°C)", value=int(default_t_cool_out),
         help="Η θερμοκρασία που ξεπερνιέται μόνο ~10% των καλοκαιρινών ωρών."
     )
 
