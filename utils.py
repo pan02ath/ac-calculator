@@ -184,7 +184,7 @@ def υπολογισμός(d, mode):
     )
 
     insulated = U_wall <= 0.55
-    thermal_bridge_penalty = 0.10 if insulated else 0.05
+    thermal_bridge_penalty = 0.05 + 0.10 * (U_wall / 2.2)
     transmission *= (1 + thermal_bridge_penalty)
 
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
