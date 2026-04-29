@@ -179,6 +179,8 @@ def υπολογισμός(d, mode):
         + U_floor * floor_area * ΔΤ
         + window_loss
     )
+    thermal_bridge_penalty = 0.10 if d["μόνωση"] in ["EPS", "EPS_γραφιτούχο", "XPS", "PUR_PIR"] else 0.05
+    transmission *= (1 + thermal_bridge_penalty)
     infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
 
     if mode == "θέρμανση":
@@ -226,7 +228,7 @@ def υπολογισμός(d, mode):
         unit_penalty_factors["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
 
     breakdown = {
-        "Τοίχοι":                  U_wall * effective_wall_area * ΔΤ,
+        "Τοίχοι":                  U_wall * effective_wall_area * ΔΤ * (1 + thermal_bridge_penalty),
         "Οροφή":                   U_roof * roof_area * ΔΤ,
         "Δάπεδο":                  U_floor * floor_area * ΔΤ,
         "Ανοίγματα":               window_loss,
