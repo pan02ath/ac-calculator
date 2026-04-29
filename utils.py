@@ -160,80 +160,80 @@ def υπολογισμός(d, mode):
         if mode == "ψύξη":
             solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * (0.6 * glazing_factor)
 
-roof_solar = 0
-if mode == "ψύξη" and d["οροφή_υπάρχει"]:
-        coeffs = {
-            "ταράτσα_εκτεθειμένη": 35,
-            "μονωμένη": 15,
-            "κεραμοσκεπή": 22,
-            "θερμαινόμενος_χώρος": 0,  # no solar gain from conditioned space above
-        }
-        roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
-
-    effective_wall_area = max(wall_area - total_glazing_area, 0)
-    internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
-
-    transmission = (
-        U_wall * effective_wall_area * ΔΤ
-        + U_roof * roof_area * ΔΤ
-        + U_floor * floor_area * ΔΤ
-        + window_loss
-    )
-    infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
-
-    if mode == "θέρμανση":
-        total = (transmission + infiltration) * 1.10
-        north_penalty_watts = total * 0.15 if d.get("βόρειος") else 0
-        total += north_penalty_watts
-    else:
-        total = transmission + infiltration + solar_gain + roof_solar + internal
-        north_penalty_watts = 0
-        if "Ζώνη Α" in d["kenak_label"]:
-            total *= 1.07
-        elif "Ζώνη Β" in d["kenak_label"]:
-            total *= 1.04
-
-    total = max(total, 0)
-    load_btu = total * 3.412
-
-    temp = d["εξωτερική"]
-    if mode == "θέρμανση":
-        if temp >= 7:           f_derating = 1.00
-        elif 4 <= temp < 7:    f_derating = 0.96
-        elif 0 <= temp < 4:    f_derating = 0.88
-        elif -7 <= temp < 0:   f_derating = 0.75
-        else:                   f_derating = 0.65
-    else:
-        if temp <= 35:          f_derating = 1.00
-        elif temp <= 40:        f_derating = 0.97
-        else:                   f_derating = 0.90
-
-    nominal_btu_base = load_btu / f_derating
-    nominal_btu_final = nominal_btu_base
-    unit_penalty_factors = {}
-
-    if d.get("περιστασιακή"):
-        factor = (
-            1.35 if d["έτος"] == "πριν_1980" else
-            1.28 if d["έτος"] == "1980_2000" else
-            1.22
+    roof_solar = 0
+    if mode == "ψύξη" and d["οροφή_υπάρχει"]:
+            coeffs = {
+                "ταράτσα_εκτεθειμένη": 35,
+                "μονωμένη": 15,
+                "κεραμοσκεπή": 22,
+                "θερμαινόμενος_χώρος": 0,  # no solar gain from conditioned space above
+            }
+            roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
+    
+        effective_wall_area = max(wall_area - total_glazing_area, 0)
+        internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
+    
+        transmission = (
+            U_wall * effective_wall_area * ΔΤ
+            + U_roof * roof_area * ΔΤ
+            + U_floor * floor_area * ΔΤ
+            + window_loss
         )
-        nominal_btu_final *= factor
-        unit_penalty_factors["Περιστασιακή χρήση"] = factor
-
-    if d.get("αθόρυβη"):
-        nominal_btu_final *= 1.20
-        unit_penalty_factors["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
-
-    breakdown = {
-        "Τοίχοι":                  U_wall * effective_wall_area * ΔΤ,
-        "Οροφή":                   U_roof * roof_area * ΔΤ,
-        "Δάπεδο":                  U_floor * floor_area * ΔΤ,
-        "Ανοίγματα":               window_loss,
-        "Αεροδιείσδυση":           infiltration,
-        "Ήλιος":                   (solar_gain + roof_solar) if mode == "ψύξη" else 0,
-        "Εσωτερικά φορτία":        internal if mode == "ψύξη" else 0,
-        "Βόρειος προσανατολισμός": north_penalty_watts if mode == "θέρμανση" else 0,
-    }
-
-    return total / 1000, load_btu, nominal_btu_base, nominal_btu_final, unit_penalty_factors, breakdown, f_derating
+        infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
+    
+        if mode == "θέρμανση":
+            total = (transmission + infiltration) * 1.10
+            north_penalty_watts = total * 0.15 if d.get("βόρειος") else 0
+            total += north_penalty_watts
+        else:
+            total = transmission + infiltration + solar_gain + roof_solar + internal
+            north_penalty_watts = 0
+            if "Ζώνη Α" in d["kenak_label"]:
+                total *= 1.07
+            elif "Ζώνη Β" in d["kenak_label"]:
+                total *= 1.04
+    
+        total = max(total, 0)
+        load_btu = total * 3.412
+    
+        temp = d["εξωτερική"]
+        if mode == "θέρμανση":
+            if temp >= 7:           f_derating = 1.00
+            elif 4 <= temp < 7:    f_derating = 0.96
+            elif 0 <= temp < 4:    f_derating = 0.88
+            elif -7 <= temp < 0:   f_derating = 0.75
+            else:                   f_derating = 0.65
+        else:
+            if temp <= 35:          f_derating = 1.00
+            elif temp <= 40:        f_derating = 0.97
+            else:                   f_derating = 0.90
+    
+        nominal_btu_base = load_btu / f_derating
+        nominal_btu_final = nominal_btu_base
+        unit_penalty_factors = {}
+    
+        if d.get("περιστασιακή"):
+            factor = (
+                1.35 if d["έτος"] == "πριν_1980" else
+                1.28 if d["έτος"] == "1980_2000" else
+                1.22
+            )
+            nominal_btu_final *= factor
+            unit_penalty_factors["Περιστασιακή χρήση"] = factor
+    
+        if d.get("αθόρυβη"):
+            nominal_btu_final *= 1.20
+            unit_penalty_factors["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
+    
+        breakdown = {
+            "Τοίχοι":                  U_wall * effective_wall_area * ΔΤ,
+            "Οροφή":                   U_roof * roof_area * ΔΤ,
+            "Δάπεδο":                  U_floor * floor_area * ΔΤ,
+            "Ανοίγματα":               window_loss,
+            "Αεροδιείσδυση":           infiltration,
+            "Ήλιος":                   (solar_gain + roof_solar) if mode == "ψύξη" else 0,
+            "Εσωτερικά φορτία":        internal if mode == "ψύξη" else 0,
+            "Βόρειος προσανατολισμός": north_penalty_watts if mode == "θέρμανση" else 0,
+        }
+    
+        return total / 1000, load_btu, nominal_btu_base, nominal_btu_final, unit_penalty_factors, breakdown, f_derating
