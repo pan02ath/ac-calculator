@@ -160,10 +160,15 @@ def υπολογισμός(d, mode):
         if mode == "ψύξη":
             solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * (0.6 * glazing_factor)
 
-    roof_solar = 0
-    if mode == "ψύξη" and d["οροφή_υπάρχει"]:
-        coeffs = {"ταράτσα_εκτεθειμένη": 35, "μονωμένη": 15, "κεραμοσκεπή": 22, "θερμαινόμενος_χώρος": 5}
-        roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
+roof_solar = 0
+if mode == "ψύξη" and d["οροφή_υπάρχει"]:
+    coeffs = {
+        "ταράτσα_εκτεθειμένη": 35,
+        "μονωμένη": 15,
+        "κεραμοσκεπή": 22,
+        "θερμαινόμενος_χώρος": 0,  # no solar gain from conditioned space above
+    }
+    roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
 
     effective_wall_area = max(wall_area - total_glazing_area, 0)
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
