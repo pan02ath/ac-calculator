@@ -264,12 +264,19 @@ def υπολογισμός(d, mode):
     transmission *= (1 + thermal_bridge_penalty)
 
     # Leakage amplification for poorly insulated / old envelopes
-    # FIX: both tables now keyed on d["μόνωση"] — no separate "έτος" field needed
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
     insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
     age_severity        = ΕΤΟΣ[d["μόνωση"]]
     envelope_weakness   = insulation_severity * age_severity
-    leakage_amplification = 1 + max(0, (envelope_weakness - 1.10)) ** 2.2 * 0.8
+
+    # More gradual amplification curve to properly penalize 1980-2000 buildings
+    if envelope_weakness < 1.15:
+        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 0.3
+    elif envelope_weakness < 1.40:
+        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 0.9
+    else:
+        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 1.3
+
     ACH_effective = base_ach * leakage_amplification
 
     infiltration = 0.33 * ACH_effective * volume * ΔΤ
