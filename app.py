@@ -58,21 +58,26 @@ st.header("Δομικά στοιχεία")
 
 c5, c6 = st.columns(2)
 with c5:
-    εξωτερικοί = st.selectbox("Πλήθος εξωτερικών τοίχων", list(ΤΟΙΧΟΙ.keys()))
-    μη_θερμαινόμενοι = st.selectbox("Τοίχοι σε επαφή με μη θερμαινόμενους χώρους", list(ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ.keys()))
+    # Changed to number_input for +/- signs
+    εξωτερικοί = st.number_input("Πλήθος εξωτερικών τοίχων", min_value=1, max_value=4, value=1, step=1)
+    
+    # Changed to number_input for +/- signs
+    μη_θερμαινόμενοι = st.number_input("Τοίχοι σε επαφή με μη θερμαινόμενους χώρους", min_value=0, max_value=3, value=0, step=1)
+    
     αεροστεγανότητα = st.selectbox("Ποιότητα αεροστεγανότητας", list(ΑΕΡΟΔΙΕΙΣΔΥΣΗ.keys()))
+
 with c6:
-    # Dynamic Insulation for Roof (Logic changed to 'άλλο διαμέρισμα')
+    # Logic for Roof
     if οροφή_επαφή == "άλλο διαμέρισμα":
         μόνωση_οροφής = "άλλο διαμέρισμα"
-        st.write("⬆️ *Οροφή: Δεν απαιτείται μόνωση (επαφή με θερμαινόμενο χώρο).*")
+        st.write("⬆️ *Οροφή: Δεν απαιτείται μόνωση.*")
     else:
         μόνωση_οροφής = st.selectbox("Θερμομόνωση οροφής", list(U_ΟΡΟΦΗΣ_BASE.keys()))
 
-    # Dynamic Insulation for Floor (Logic changed to 'άλλο διαμέρισμα')
+    # Logic for Floor
     if δάπεδο_επαφή == "άλλο διαμέρισμα":
         μόνωση_δάπεδου = "άλλο διαμέρισμα"
-        st.write("⬇️ *Δάπεδο: Δεν απαιτείται μόνωση (επαφή με θερμαινόμενο χώρο).*")
+        st.write("⬇️ *Δάπεδο: Δεν απαιτείται μόνωση.*")
     else:
         μόνωση_δάπεδου = st.selectbox("Θερμομόνωση δαπέδου", list(U_ΔΑΠΕΔΟΥ_BASE.keys()))
 
