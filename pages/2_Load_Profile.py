@@ -40,10 +40,21 @@ base_cooling.setdefault("kenak_label", "Ζώνη Β")
 # ── Indoor setpoints ─────────────────────────────────────────────────
 st.header("Επιθυμητή εσωτερική θερμοκρασία")
 c1, c2 = st.columns(2)
+
+default_heat = base_heating.get("εσωτερική", 21)
+default_cool = base_cooling.get("εσωτερική", 24)
+
 with c1:
-    t_heat_in = st.number_input("Setpoint θέρμανσης (°C)", value=21)
+    t_heat_in = st.number_input(
+        "ζητούμενη θέρμανσης (°C)",
+        value=default_heat
+    )
+
 with c2:
-    t_cool_in = st.number_input("Setpoint ψύξης (°C)", value=24)
+    t_cool_in = st.number_input(
+        "ζητούμενη ψύξης (°C)",
+        value=default_cool
+    )
 
 # ── Ambient temperature range ────────────────────────────────────────
 st.header("Εύρος θερμοκρασίας περιβάλλοντος")
