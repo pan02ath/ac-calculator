@@ -263,8 +263,8 @@ def υπολογισμός(d, mode):
     thermal_bridge_penalty = 0.10 if insulated else 0.05
     transmission *= (1 + thermal_bridge_penalty)
 
-    ACH_effective = base_ach * leakage_amplification
-
+    base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
+    
     infiltration = 0.33 * ACH_effective * volume * ΔΤ
 
     if mode == "θέρμανση":
