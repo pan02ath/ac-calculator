@@ -187,7 +187,15 @@ def υπολογισμός(d, mode):
     thermal_bridge_penalty = 0.10 if insulated else 0.05
     transmission *= (1 + thermal_bridge_penalty)
 
-    infiltration = 0.33 * ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]] * volume * ΔΤ
+    base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
+
+    insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
+    age_severity = ΕΤΟΣ[d["έτος"]]
+    envelope_weakness = insulation_severity * age_severity
+    leakage_amplification = 1 + max(0, (envelope_weakness - 1.10)) ** 2.2 * 0.8
+    ACH_effective = base_ach * leakage_amplification
+
+    infiltration = 0.33 * ACH_effective * volume * ΔΤ
 
     if mode == "θέρμανση":
         total = (transmission + infiltration) * 1.10
