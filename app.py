@@ -25,16 +25,14 @@ with c1:
     εσωτερική = st.number_input("Εσωτερική Θερμοκρασία (°C)", value=st.session_state.tin)
     εξωτερική = st.number_input("Εξωτερική Θερμοκρασία (°C)", value=st.session_state.tout)
 
-ηλιακή_έκθεση_val, ηλιακή_έκθεση_label = 1.0, "N/A"
 βάση_val, kenak_zone_label = 210, "N/A"
-νομός, υψόμετρο_500 = "N/A", False
-base_zone, effective_zone = "N/A", "N/A"
+ηλιακή_έκθεση_val = 1.0
 
 if mode == "ψύξη":
     with c2:
         νομός = st.selectbox("Νομός / Περιοχή", list(ΝΟΜΟΙ_ΖΩΝΗ.keys()))
         υψόμετρο_500 = st.checkbox("Υψόμετρο > 500 μέτρα")
-        base_zone, effective_zone, βάση_val = compute_kenak_zone(νομός, υψόμετρο_500)
+        _, effective_zone, βάση_val = compute_kenak_zone(νομός, υψόμετρο_500)
         kenak_zone_label = f"Ζώνη {effective_zone}"
         ηλιακή_έκθεση_label = st.selectbox("Ηλιακή έκθεση", list(ΗΛΙΑΚΗ_ΕΚΘΕΣΗ.keys()))
         ηλιακή_έκθεση_val = ΗΛΙΑΚΗ_ΕΚΘΕΣΗ[ηλιακή_έκθεση_label]
@@ -46,7 +44,7 @@ else:
 st.header("Περιγραφή χώρου")
 c3, c4 = st.columns(2)
 with c3:
-    επιφάνεια = st.number_input("Επιφάνεια χώρου (m²)", 5, 200, 20)
+    επιφάνεια = st.number_input("Επιφάνεια χώρου (m²)", 5, 500, 20)
     ύψος = st.number_input("Ύψος χώρου (m)", 2.0, 4.5, 2.8)
 with c4:
     τύπος = st.selectbox("Χρήση χώρου", list(ΕΣΩΤΕΡΙΚΑ.keys()))
@@ -64,17 +62,19 @@ with c5:
     μη_θερμαινόμενοι = st.selectbox("Τοίχοι σε επαφή με μη θερμαινόμενους χώρους", list(ΜΗ_ΘΕΡΜΑΙΝΟΜΕΝΟΙ.keys()))
     αεροστεγανότητα = st.selectbox("Ποιότητα αεροστεγανότητας", list(ΑΕΡΟΔΙΕΙΣΔΥΣΗ.keys()))
 with c6:
-    # Dynamic Insulation for Roof
-    if οροφή_επαφή in ["ταράτσα_εκτεθειμένη", "κεραμοσκεπή", "μη_θερμαινόμενος_χώρος"]:
+    # Dynamic Insulation for Roof (Logic changed to 'άλλο διαμέρισμα')
+    if οροφή_επαφή == "άλλο διαμέρισμα":
+        μόνωση_οροφής = "άλλο διαμέρισμα"
+        st.write("⬆️ *Οροφή: Δεν απαιτείται μόνωση (επαφή με θερμαινόμενο χώρο).*")
+    else:
         μόνωση_οροφής = st.selectbox("Θερμομόνωση οροφής", list(U_ΟΡΟΦΗΣ_BASE.keys()))
-    else:
-        μόνωση_οροφής = "θερμαινόμενος_χώρος"
 
-    # Dynamic Insulation for Floor
-    if δάπεδο_επαφή in ["πιλοτή", "έδαφος", "μη_θερμαινόμενος_χώρος"]:
-        μόνωση_δάπεδου = st.selectbox("Θερμομόνωση δαπέδου", list(U_ΔΑΠΕΔΟΥ_BASE.keys()))
+    # Dynamic Insulation for Floor (Logic changed to 'άλλο διαμέρισμα')
+    if δάπεδο_επαφή == "άλλο διαμέρισμα":
+        μόνωση_δάπεδου = "άλλο διαμέρισμα"
+        st.write("⬇️ *Δάπεδο: Δεν απαιτείται μόνωση (επαφή με θερμαινόμενο χώρο).*")
     else:
-        μόνωση_δάπεδου = "άλλο_διαμέρισμα"
+        μόνωση_δάπεδου = st.selectbox("Θερμομόνωση δαπέδου", list(U_ΔΑΠΕΔΟΥ_BASE.keys()))
 
     κουφώματα = st.selectbox("Τύπος κουφωμάτων/υαλοπινάκων", list(ΚΟΥΦΩΜΑΤΑ.keys()))
 
@@ -124,4 +124,4 @@ if st.button("Υπολογισμός"):
             st.success(f"**Τελική σύσταση (με προτιμήσεις): {commercial_range_final} BTU**")
             
     except Exception as e:
-        st.error(f"Σφάλμα: {e}")
+        st.error(f"Σφάλμα κατά τον υπολογισμό. Βεβαιωθείτε ότι όλα τα πεδία είναι συμπληρωμένα.")
