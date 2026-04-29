@@ -192,8 +192,8 @@ def υπολογισμός(d, mode):
     insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
     age_severity = ΕΤΟΣ[d["έτος"]]
     envelope_weakness = insulation_severity * age_severity
-    leakage_amplification = 1 + max(0, (envelope_weakness - 1.10)) ** 2.2 * 0.8
-    ACH_effective = base_ach * leakage_amplification
+    leakage_amplification = 1 + (envelope_weakness - 1.0) * 1.5
+    leakage_amplification = max(1.0, leakage_amplification)    ACH_effective = base_ach * leakage_amplification
 
     infiltration = 0.33 * ACH_effective * volume * ΔΤ
 
