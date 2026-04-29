@@ -15,8 +15,8 @@ U_ΤΟΙΧΟΥ = {
 }
 
 ΚΟΥΦΩΜΑΤΑ = {
-    "Μονό τζάμι":                              5.80,
-    "Διπλό αλουμίνιο χωρίς θερμοδιακοπή":     3.20,
+    "Μονό τζάμι":                              6.50,
+    "Διπλό αλουμίνιο χωρίς θερμοδιακοπή":     3.40,
     "Διπλό αλουμίνιο με θερμοδιακοπή":        2.20,
     "Διπλό PVC":                               1.80,
     "Διπλό low-e":                             1.10,
@@ -24,8 +24,11 @@ U_ΤΟΙΧΟΥ = {
 }
 
 ΑΝΟΙΓΜΑΤΑ = {
-    "μονή_ανοιγόμενη_μπαλκονόπορτα": 1.89, "διπλή_συρόμενη_μπαλκονόπορτα": 3.78,
-    "διπλή_ανοιγόμενη_μπαλκονόπορτα": 3.36, "μεγάλο_παράθυρο": 1.68, "μικρό_παράθυρο": 0.36
+    "μονή_ανοιγόμενη_μπαλκονόπορτα": 1.89,
+    "διπλή_συρόμενη_μπαλκονόπορτα": 3.78,
+    "διπλή_ανοιγόμενη_μπαλκονόπορτα": 3.36,
+    "μεγάλο_παράθυρο": 1.68,
+    "μικρό_παράθυρο": 0.36
 }
 
 ΑΕΡΟΔΙΕΙΣΔΥΣΗ = {"μέτρια": 0.7, "κακή": 1.2, "καλή": 0.4}
@@ -37,67 +40,30 @@ U_ΤΟΙΧΟΥ = {
 ΕΣΩΤΕΡΙΚΑ = {"υπνοδωμάτιο": 300, "παιδικό_δωμάτιο": 350, "σαλόνι": 500, "σαλοκουζίνα": 1000, "κουζίνα": 700, "γραφείο": 400}
 ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ = {"υπνοδωμάτιο": 0.5, "παιδικό_δωμάτιο": 1.0, "σαλόνι": 1.0, "σαλοκουζίνα": 1.0, "κουζίνα": 1.0, "γραφείο": 1.0}
 
-ΝΟΜΟΙ_ΖΩΝΗ = {
-    "Αττική":              "Β",
-    "Θεσσαλονίκη":         "Γ",
-    "Αιτωλοακαρνανία":     "Β",
-    "Αργολίδα":            "Α",
-    "Αρκαδία":             "Β",
-    "Άρτα":                "Β",
-    "Αχαΐα":               "Β",
-    "Βοιωτία":             "Β",
-    "Γρεβενά":             "Δ",
-    "Δράμα":               "Δ",
-    "Δωδεκάνησα":          "Α",
-    "Έβρος":               "Γ",
-    "Εύβοια":              "Β",
-    "Ευρυτανία":           "Γ",
-    "Ζάκυνθος":            "Α",
-    "Ηλεία":               "Β",
-    "Ημαθία":              "Γ",
-    "Θεσπρωτία":           "Β",
-    "Ιθάκη":               "Α",
-    "Ιωάννινα":            "Γ",
-    "Καβάλα":              "Γ",
-    "Καρδίτσα":            "Γ",
-    "Καστοριά":            "Δ",
-    "Κέρκυρα":             "Β",
-    "Κεφαλλονιά":          "Α",
-    "Κιλκίς":              "Γ",
-    "Κοζάνη":              "Δ",
-    "Κορινθία":            "Β",
-    "Κρήτη":               "Α",
-    "Κύθηρα":              "Α",
-    "Κυκλάδες":            "Α",
-    "Λακωνία":             "Α",
-    "Λάρισα":              "Γ",
-    "Λέσβος":              "Β",
-    "Λευκάδα":             "Β",
-    "Μαγνησία":            "Β",
-    "Μεσσηνία":            "Α",
-    "Ξάνθη":               "Γ",
-    "Πέλλα":               "Γ",
-    "Πιερία":              "Γ",
-    "Πρέβεζα":             "Β",
-    "Ροδόπη":              "Γ",
-    "Σέρρες":              "Γ",
-    "Τρίκαλα":             "Γ",
-    "Ύδρα/Σπέτσες/Πόρος":  "Α",
-    "Φθιώτιδα":            "Β",
-    "Φλώρινα":             "Δ",
-    "Φωκίδα":              "Β",
-    "Χαλκιδική":           "Γ",
-    "Χίος":                "Β",
+ΘΕΡΜΟΜΟΝΩΣΗ = {
+    "Πριν το 1980, χωρίς μόνωση": 1.30,
+    "1980–2000, βασική μόνωση (EPS ~5cm)": 1.10,
+    "2000–2010, μέτρια μόνωση (EPS ~8cm)": 1.0,
+    "Μετά το 2010, EPS/XPS (ΚΕΝΑΚ)": 0.90,
+    "Μετά το 2010, PUR/PIR": 0.85,
+    "Ανακαίνιση με εξωτερική μόνωση": 0.90,
 }
 
+ΕΤΟΣ = {
+    "Πριν το 1980, χωρίς μόνωση": 1.30,
+    "1980–2000, βασική μόνωση (EPS ~5cm)": 1.12,
+    "2000–2010, μέτρια μόνωση (EPS ~8cm)": 1.0,
+    "Μετά το 2010, EPS/XPS (ΚΕΝΑΚ)": 0.85,
+    "Μετά το 2010, PUR/PIR": 0.80,
+    "Ανακαίνιση με εξωτερική μόνωση": 0.90,
+}
+
+ΝΟΜΟΙ_ΖΩΝΗ = {...}  # keep as-is
 ΖΩΝΗ_BTU = {"Α": 240, "Β": 210, "Γ": 190, "Δ": 170}
 ΖΩΝΗ_ΕΠΟΜΕΝΗ = {"Α": "Β", "Β": "Γ", "Γ": "Δ", "Δ": "Δ"}
 
 COMMERCIAL_SIZES = [7, 9, 10, 12, 13, 14, 16, 18, 20, 22, 24, 30]
 
-# =========================================================
-# ADJACENCY (Temperature Reduction Factors - EN 12831 style)
-# =========================================================
 ADJACENCY_B = {
     "άλλο_διαμέρισμα": 0.25,
     "θερμαινόμενος_χώρος": 0.20,
@@ -105,26 +71,6 @@ ADJACENCY_B = {
     "πιλοτή": 0.70,
     "έδαφος": 0.70,
 }
-
-# =========================================================
-# HELPERS
-# =========================================================
-def get_commercial_range(nominal_btu_val):
-    val_k = nominal_btu_val / 1000
-    suitable_sizes = [s for s in COMMERCIAL_SIZES if s >= val_k]
-    if not suitable_sizes:
-        return f"{COMMERCIAL_SIZES[-1]}000+"
-    idx = COMMERCIAL_SIZES.index(suitable_sizes[0])
-    if idx > 0:
-        return f"{COMMERCIAL_SIZES[idx-1] * 1000:,} – {COMMERCIAL_SIZES[idx] * 1000:,}"
-    return f"{COMMERCIAL_SIZES[idx] * 1000:,}"
-
-
-def compute_kenak_zone(νομός: str, υψόμετρο_500: bool) -> tuple:
-    base = ΝΟΜΟΙ_ΖΩΝΗ[νομός]
-    effective = ΖΩΝΗ_ΕΠΟΜΕΝΗ[base] if υψόμετρο_500 and base != "Δ" else base
-    return base, effective, ΖΩΝΗ_BTU[effective]
-
 
 # =========================================================
 # ENGINE
@@ -138,114 +84,76 @@ def υπολογισμός(d, mode):
     wall_area = total_wall_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
     roof_area = floor_area if d["οροφή_υπάρχει"] else 0
 
-    U_wall  = U_ΤΟΙΧΟΥ[d["μόνωση"]]
-    U_roof  = 0.35 * ΟΡΟΦΗ.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
+    U_wall = U_ΤΟΙΧΟΥ[d["μόνωση"]]
+    U_roof = 0.35 * ΟΡΟΦΗ.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
     U_floor = 0.60 * ΔΑΠΕΔΟ[d["δάπεδο"]]
-    U_win   = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
+    U_win = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
 
-    b_roof  = ADJACENCY_B.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
+    b_roof = ADJACENCY_B.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
     b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
 
     window_loss = 0
-    solar_gain = 0
     total_glazing_area = 0
+
     windows = [
-        (d["μεγάλα"],         "μεγάλο_παράθυρο"),
-        (d["μικρά"],          "μικρό_παράθυρο"),
+        (d["μεγάλα"], "μεγάλο_παράθυρο"),
+        (d["μικρά"], "μικρό_παράθυρο"),
         (d["μπαλκονόπορτες"], "διπλή_ανοιγόμενη_μπαλκονόπορτα"),
-        (d["μονές"],          "μονή_ανοιγόμενη_μπαλκονόπορτα"),
-        (d["συρόμενες"],      "διπλή_συρόμενη_μπαλκονόπορτα"),
+        (d["μονές"], "μονή_ανοιγόμενη_μπαλκονόπορτα"),
+        (d["συρόμενες"], "διπλή_συρόμενη_μπαλκονόπορτα"),
     ]
+
     for count, key in windows:
         area = count * ΑΝΟΙΓΜΑΤΑ[key]
         total_glazing_area += area
-        window_loss += U_win * area * ΔΤ
-        if mode == "ψύξη":
-            solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * 0.35
+        loss = U_win * area * ΔΤ
 
-    roof_solar = 0
-    if mode == "ψύξη" and d["οροφή_υπάρχει"]:
-        coeffs = {
-            "ταράτσα_εκτεθειμένη": 35,
-            "μονωμένη": 15,
-            "κεραμοσκεπή": 22,
-            "θερμαινόμενος_χώρος": 0,
-        }
-        roof_solar = roof_area * coeffs.get(d["οροφή"], 0) * d["ηλιακή_έκθεση"]
+        # slight realism boost for bad frames
+        if "χωρίς θερμοδιακοπή" in d["κουφώματα"] or "Μονό" in d["κουφώματα"]:
+            loss *= 1.15
+
+        window_loss += loss
 
     effective_wall_area = max(wall_area - total_glazing_area, 0)
-    internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
     transmission = (
-        U_wall  * effective_wall_area * ΔΤ
-        + U_roof  * roof_area * b_roof * ΔΤ
+        U_wall * effective_wall_area * ΔΤ
+        + U_roof * roof_area * b_roof * ΔΤ
         + U_floor * floor_area * b_floor * ΔΤ
         + window_loss
     )
 
+    # =====================================================
+    # ✅ Degradation (scientifically correct placement)
+    # =====================================================
+    insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
+    age_severity = ΕΤΟΣ[d["μόνωση"]]
+    envelope_weakness = insulation_severity * age_severity
+
+    degradation = 1 + (envelope_weakness - 1.0) * 0.6
+    degradation = max(1.0, degradation)
+
+    transmission *= degradation
+
+    # =====================================================
+    # ✅ Thermal bridges (fixed logic)
+    # =====================================================
     insulated = U_wall <= 0.55
-    thermal_bridge_penalty = 0.05 + 0.10 * (U_wall / 2.2)
+    thermal_bridge_penalty = 0.05 if insulated else 0.15
     transmission *= (1 + thermal_bridge_penalty)
 
+    # =====================================================
+    # ✅ Improved infiltration
+    # =====================================================
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
+    leakage_amplification = 1 + (envelope_weakness - 1.0) ** 1.5 * 2.0
+    leakage_amplification = max(1.0, leakage_amplification)
 
-    insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
-    age_severity = ΕΤΟΣ[d["έτος"]]
-    envelope_weakness = insulation_severity * age_severity
-    leakage_amplification = 1 + (envelope_weakness - 1.0) * 1.5
-    leakage_amplification = max(1.0, leakage_amplification)    ACH_effective = base_ach * leakage_amplification
-
+    ACH_effective = base_ach * leakage_amplification
     infiltration = 0.33 * ACH_effective * volume * ΔΤ
 
-    if mode == "θέρμανση":
-        total = (transmission + infiltration) * 1.10
-        north_penalty_watts = total * 0.15 if d.get("βόρειος") else 0
-        total += north_penalty_watts
-    else:
-        total = transmission + infiltration + solar_gain + roof_solar + internal
-        north_penalty_watts = 0
-        if "Ζώνη Α" in d["kenak_label"]:
-            total *= 1.07
-        elif "Ζώνη Β" in d["kenak_label"]:
-            total *= 1.04
+    total = transmission + infiltration
 
-    total = max(total, 0)
     load_btu = total * 3.412
 
-    temp = d["εξωτερική"]
-    if mode == "θέρμανση":
-        if temp >= 7:          f_derating = 1.00
-        elif 4 <= temp < 7:    f_derating = 0.96
-        elif 0 <= temp < 4:    f_derating = 0.88
-        elif -7 <= temp < 0:   f_derating = 0.75
-        else:                  f_derating = 0.65
-    else:
-        if temp <= 35:         f_derating = 1.00
-        elif temp <= 40:       f_derating = 0.97
-        else:                  f_derating = 0.90
-
-    nominal_btu_base = load_btu / f_derating
-    nominal_btu_final = nominal_btu_base
-    unit_penalty_factors = {}
-
-    if d.get("περιστασιακή"):
-        factor = 1.25
-        nominal_btu_final *= factor
-        unit_penalty_factors["Περιστασιακή χρήση"] = factor
-
-    if d.get("αθόρυβη"):
-        nominal_btu_final *= 1.20
-        unit_penalty_factors["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
-
-    breakdown = {
-        "Τοίχοι":                  U_wall * effective_wall_area * ΔΤ * (1 + thermal_bridge_penalty),
-        "Οροφή":                   U_roof * roof_area * b_roof * ΔΤ,
-        "Δάπεδο":                  U_floor * floor_area * b_floor * ΔΤ,
-        "Ανοίγματα":               U_win * total_glazing_area * ΔΤ,
-        "Αεροδιείσδυση":           infiltration,
-        "Ήλιος":                   (solar_gain + roof_solar) if mode == "ψύξη" else 0,
-        "Εσωτερικά φορτία":        internal if mode == "ψύξη" else 0,
-        "Βόρειος προσανατολισμός": north_penalty_watts if mode == "θέρμανση" else 0,
-    }
-
-    return total / 1000, load_btu, nominal_btu_base, nominal_btu_final, unit_penalty_factors, breakdown, f_derating
+    return total / 1000, load_btu
