@@ -259,9 +259,20 @@ def υπολογισμός(d, mode):
         + window_loss
     )
 
-    insulated = U_wall <= 0.55
-    thermal_bridge_penalty = 0.10 if insulated else 0.05
-    transmission *= (1 + thermal_bridge_penalty)
+    # Thermal bridges as fraction of envelope losses (physically consistent)
+    base_tb_factor = 0.07  # typical residential range 5–12%
+    
+    # slightly higher relative impact in poorly insulated buildings
+    if U_wall > 1.5:
+        tb_factor = base_tb_factor * 1.6
+    elif U_wall > 0.9:
+        tb_factor = base_tb_factor * 1.3
+    elif U_wall > 0.55:
+        tb_factor = base_tb_factor * 1.1
+    else:
+        tb_factor = base_tb_factor
+    
+    transmission *= (1 + tb_factor)
 
     # Leakage amplification for poorly insulated / old envelopes
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
