@@ -259,34 +259,9 @@ def υπολογισμός(d, mode):
         + window_loss
     )
 
-    # Thermal bridges as fraction of envelope losses (physically consistent)
-    base_tb_factor = 0.07  # typical residential range 5–12%
-
-    # slightly higher relative impact in poorly insulated buildings
-    if U_wall > 1.5:
-        tb_factor = base_tb_factor * 1.6
-    elif U_wall > 0.9:
-        tb_factor = base_tb_factor * 1.3
-    elif U_wall > 0.55:
-        tb_factor = base_tb_factor * 1.1
-    else:
-        tb_factor = base_tb_factor
-
-    transmission *= (1 + tb_factor)
-
-    # Leakage amplification for poorly insulated / old envelopes
-    base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
-    insulation_severity = ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]]
-    age_severity        = ΕΤΟΣ[d["μόνωση"]]
-    envelope_weakness   = insulation_severity * age_severity
-
-    # More gradual amplification curve to properly penalize 1980-2000 buildings
-    if envelope_weakness < 1.15:
-        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 0.3
-    elif envelope_weakness < 1.40:
-        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 0.9
-    else:
-        leakage_amplification = 1.0 + (envelope_weakness - 1.0) * 1.3
+    insulated = U_wall <= 0.55
+    thermal_bridge_penalty = 0.10 if insulated else 0.05
+    transmission *= (1 + thermal_bridge_penalty)
 
     ACH_effective = base_ach * leakage_amplification
 
