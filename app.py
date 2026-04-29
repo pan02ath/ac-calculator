@@ -26,7 +26,7 @@ with c1:
     εσωτερική = st.number_input("Εσωτερική Θερμοκρασία (°C)", value=st.session_state.tin)
     εξωτερική = st.number_input("Εξωτερική Θερμοκρασία (°C)", value=st.session_state.tout)
 
-# Default values for logic
+# Defaults
 ηλιακή_έκθεση_val, ηλιακή_έκθεση_label = 1.0, "N/A"
 βάση_val, kenak_zone_label = 210, "N/A"
 νομός, υψόμετρο_500 = "N/A", False
@@ -62,22 +62,21 @@ st.header("Δομικά στοιχεία")
 
 c5, c6 = st.columns(2)
 with c5:
-    # Changed to number_input with +/-
     εξωτερικοί = st.number_input("Πλήθος εξωτερικών τοίχων", 1, 4, 1)
     μη_θερμαινόμενοι = st.number_input("Τοίχοι σε επαφή με μη θερμαινόμενους χώρους", 0, 3, 0)
     αεροστεγανότητα = st.selectbox("Ποιότητα αεροστεγανότητας", list(ΑΕΡΟΔΙΕΙΣΔΥΣΗ.keys()))
 with c6:
-    # Dynamic Insulation for Roof
+    # Handle Roof Insulation Logic
     if οροφή_επαφή == "άλλο διαμέρισμα":
         μόνωση_οροφής = "άλλο διαμέρισμα"
-        st.write("⬆️ *Οροφή: Δεν απαιτούνται στοιχεία μόνωσης.*")
+        st.write("⬆️ *Οροφή: Επαφή με θερμαινόμενο χώρο.*")
     else:
         μόνωση_οροφής = st.selectbox("Θερμομόνωση οροφής", list(U_ΟΡΟΦΗΣ_BASE.keys()))
 
-    # Dynamic Insulation for Floor
+    # Handle Floor Insulation Logic
     if δάπεδο_επαφή == "άλλο διαμέρισμα":
         μόνωση_δάπεδου = "άλλο διαμέρισμα"
-        st.write("⬇️ *Δάπεδο: Δεν απαιτούνται στοιχεία μόνωσης.*")
+        st.write("⬇️ *Δάπεδο: Επαφή με θερμαινόμενο χώρο.*")
     else:
         μόνωση_δάπεδου = st.selectbox("Θερμομόνωση δαπέδου", list(U_ΔΑΠΕΔΟΥ_BASE.keys()))
 
@@ -94,30 +93,52 @@ with c8:
 with c9:
     μπαλκονόπορτες = st.number_input("Διπλές ανοιγόμενες μπαλκ/πορτες", 0, 10, 1)
 
-st.header("Συνήθης χρήση κλιματιστικού")
 περιστασιακή = st.checkbox("Προτιμάτε περιστασιακή χρήση;")
 αθόρυβη = st.checkbox("Προτιμάτε αθόρυβη λειτουργία;")
 
-# Construct Data Dictionary
+# Build the dictionary EXACTLY as utils.py expects it
 d = {
-    "μόνωση": μόνωση_τοίχου, "μόνωση_οροφής": μόνωση_οροφής, "μόνωση_δάπεδου": μόνωση_δάπεδου,
-    "επιφάνεια": επιφάνεια, "ύψος": ύψος, "εσωτερική": εσωτερική, "εξωτερική": εξωτερική, 
-    "τύπος": τύπος, "δάπεδο": δάπεδο_επαφή, "οροφή": οροφή_επαφή, "εξωτερικοί": εξωτερικοί, 
-    "μη_θερμαινόμενοι": μη_θερμαινόμενοι, "κουφώματα": κουφώματα, "αεροστεγανότητα": αεροστεγανότητα, 
-    "μεγάλα": μεγάλα, "μικρά": μικρά, "μπαλκονόπορτες": μπαλκονόπορτες, "μονές": μονές, 
-    "συρόμενες": συρόμενες, "ηλιακή_έκθεση": ηλιακή_έκθεση_val, "βάση_ακτινοβολίας": βάση_val,
-    "βόρειος": βόρειος, "περιστασιακή": περιστασιακή, "αθόρυβη": αθόρυβη, "kenak_label": kenak_zone_label,
+    "μόνωση": μόνωση_τοίχου, 
+    "μόνωση_οροφής": μόνωση_οροφής, 
+    "μόνωση_δάπεδου": μόνωση_δάπεδου,
+    "επιφάνεια": επιφάνεια, 
+    "ύψος": ύψος, 
+    "εσωτερική": εσωτερική, 
+    "εξωτερική": εξωτερική, 
+    "τύπος": τύπος, 
+    "δάπεδο": δάπεδο_επαφή, 
+    "οροφή": οροφή_επαφή, 
+    "εξωτερικοί": εξωτερικοί, 
+    "μη_θερμαινόμενοι": μη_θερμαινόμενοι, 
+    "κουφώματα": κουφώματα, 
+    "αεροστεγανότητα": αεροστεγανότητα, 
+    "μεγάλα": μεγάλα, 
+    "μικρά": μικρά, 
+    "μπαλκονόπορτες": μπαλκονόπορτες, 
+    "μονές": μονές, 
+    "συρόμενες": συρόμενες, 
+    "ηλιακή_έκθεση": ηλιακή_έκθεση_val, 
+    "βάση_ακτινοβολίας": βάση_val,
+    "βόρειος": βόρειος, 
+    "περιστασιακή": περιστασιακή, 
+    "αθόρυβη": αθόρυβη, 
+    "kenak_label": kenak_zone_label,
 }
 
 if st.button("Υπολογισμός"):
     try:
+        # Run Calculation
         kw, load_btu, nominal_btu_base, nominal_btu_final, unit_penalty_factors, breakdown, f_derating = υπολογισμός(d, mode)
-        commercial_range_base = get_commercial_range(nominal_btu_base)
-        commercial_range_final = get_commercial_range(nominal_btu_final)
-
+        
+        # SAVE TO SESSION STATE (This is what restores the Load Profile values)
+        if mode == "θέρμανση":
+            st.session_state["hvac_inputs_heating"] = d
+        else:
+            st.session_state["hvac_inputs_cooling"] = d
+        
+        # UI Display
         st.divider()
         st.success(f"**Φορτίο αιχμής:** {kw:.2f} kW | {load_btu:.0f} BTU/h")
-        st.info(f"**Εύρος απωλειών (±15%):** {load_btu*0.85:.0f} – {load_btu*1.15:.0f} BTU/h")
         
         st.subheader("Ανάλυση φορτίου αιχμής")
         for label, watts in breakdown.items():
