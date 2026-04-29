@@ -97,101 +97,109 @@ def compute_kenak_zone(νομός, υψόμετρο_500):
 def υπολογισμός(d, mode):
     ΔΤ = abs(d["εξωτερική"] - d["εσωτερική"])
     floor_area = d["επιφάνεια"]
-    side = math.sqrt(floor_area)
-    total_wall_area = 4 * side * d["ύψος"]
-    wall_area = total_wall_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
     
-    # 1. TRANSMISSION LOSSES
-    # Walls
+    # Deriving geometry for internal partitions
+    side_length = math.sqrt(floor_area)
+    wall_height = d["ύψος"]
+    single_wall_gross_area = side_length * wall_height
+    
+    # 1. TRANSMISSION LOSSES (Φορτία Μετάδοσης)
+    
+    # A. EXTERIOR WALLS
+    # Based on number of external walls selected (1-4)
+    total_ext_wall_area = 4 * single_wall_gross_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
+    
+    # B. WINDOWS (Calculated from inputs)
+    total_glazing_area = (
+        d["μεγάλα"] * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
+        d["μικρά"] * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
+        d["μπαλκονόπορτες"] * ΑΝΟΙΓΜΑΤΑ["διπλή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["μονές"] * ΑΝΟΙΓΜΑΤΑ["μονή_ανοιγόμενη_μπαλκονόπορτα"] +
+        d["συρόμενες"] * ΑΝΟΙΓΜΑΤΑ["διπλή_συρόμενη_μπαλκονόπορτα"]
+    )
+    U_win = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
+    window_loss = U_win * total_glazing_area * ΔΤ
+    
+    # Net Wall Area (Gross - Windows)
+    eff_ext_wall_area = max(total_ext_wall_area - total_glazing_area, 0)
     U_wall = U_ΤΟΙΧΟΥ[d["μόνωση"]]
-    
-    # Roof logic
+    ext_wall_loss = U_wall * eff_ext_wall_area * ΔΤ
+
+    # C. UNHEATED ADJACENT WALLS (μη θερμαινόμενοι)
+    # Scientific: Internal walls usually have no insulation (U ~2.0)
+    # b-factor 0.50 per EN 12831
+    U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
+    unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
+
+    # D. ROOF & FLOOR (άλλο διαμέρισμα vs specific types)
+    # Using safety factor b=0.20 for heated neighbors
     if d["οροφή"] == "άλλο διαμέρισμα":
-        # Use a standard U-value for an internal slab (usually ~2.0 if uninsulated)
-        U_roof = 2.0 
-        b_roof = ADJACENCY_B["άλλο διαμέρισμα"]
+        U_roof, b_roof = 2.0, 0.20 
     else:
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
-    
-    # Floor logic
+
     if d["δάπεδο"] == "άλλο διαμέρισμα":
-        U_floor = 2.0 
-        b_floor = ADJACENCY_B["άλλο διαμέρισμα"]
+        U_floor, b_floor = 2.0, 0.20
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
-        
-    # Windows
-    total_glazing_area = 0
-    window_loss = 0
-    solar_gain = 0
-    windows = [(d["μεγάλα"], "μεγάλο_παράθυρο"), (d["μικρά"], "μικρό_παράθυρο"), 
-               (d["μπαλκονόπορτες"], "διπλή_ανοιγόμενη_μπαλκονόπορτα"), 
-               (d["μονές"], "μονή_ανοιγόμενη_μπαλκονόπορτα"), (d["συρόμενες"], "διπλή_συρόμενη_μπαλκονόπορτα")]
-    
-    U_win = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
-    for count, key in windows:
-        area = count * ΑΝΟΙΓΜΑΤΑ[key]
-        total_glazing_area += area
-        window_loss += U_win * area * ΔΤ
-        if mode == "ψύξη":
-            solar_gain += area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * 0.35
 
-    eff_wall_area = max(wall_area - total_glazing_area, 0)
-    transmission = (U_wall * eff_wall_area * ΔΤ) + (U_roof * floor_area * b_roof * ΔΤ) + \
-                   (U_floor * floor_area * b_floor * ΔΤ) + window_loss
-    
-    # Thermal Bridges
-    transmission *= (1.10 if U_wall <= 0.55 else 1.05)
+    roof_loss = U_roof * floor_area * b_roof * ΔΤ
+    floor_loss = U_floor * floor_area * b_floor * ΔΤ
 
-    # 2. INFILTRATION
-    volume = floor_area * d["ύψος"]
+    # 2. TOTAL TRANSMISSION & BRIDGES
+    # Add 10% thermal bridge penalty for older buildings
+    transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
+    thermal_bridges = 1.10 if U_wall > 0.50 else 1.05
+    transmission *= thermal_bridges
+
+    # 3. INFILTRATION (Αερισμός)
+    volume = floor_area * wall_height
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
-    leak_amp = 1 + max(0, (ΘΕΡΜΟΜΟΝΩΣΗ[d["μόνωση"]] * ΕΤΟΣ[d["μόνωση"]] - 1.10)) ** 2.2 * 0.8
-    infiltration = 0.33 * base_ach * leak_amp * volume * ΔΤ
+    infiltration = 0.33 * base_ach * volume * ΔΤ
 
-    # 3. TOTALS
+    # 4. TOTALS & COOLING SPECIFICS
+    solar_gain = 0
     internal = 0
-    breakdown_solar = 0
-    if mode == "θέρμανση":
-        total = (transmission + infiltration) * 1.10 
-        if d.get("βόρειος"): total *= 1.15
-    else:
-        roof_solar_coeff = {"ταράτσα_εκτεθειμένη": 35, "κεραμοσκεπή": 22, "μη_θερμαινόμενος_χώρος": 10}.get(d["οροφή"], 0)
-        roof_solar = floor_area * roof_solar_coeff * d["ηλιακή_έκθεση"]
+    if mode == "ψύξη":
+        # Solar gains through glass
+        solar_gain = total_glazing_area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * 0.35
+        # Heat from people/appliances
         internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
-        total = transmission + infiltration + solar_gain + roof_solar + internal
-        breakdown_solar = solar_gain + roof_solar
-
-    # 4. DERATING
-    temp = d["εξωτερική"]
-    f_derating = 1.0 
-    if mode == "θέρμανση":
-        if temp < 0: f_derating = 0.75
-        elif temp < 7: f_derating = 0.92
+        total = transmission + infiltration + solar_gain + internal
     else:
-        if temp > 40: f_derating = 0.90
-        elif temp > 35: f_derating = 0.97
+        # Heating: Apply North orientation penalty if checked
+        total = (transmission + infiltration) * 1.10 # 10% safety
+        if d.get("βόρειος"): total *= 1.15
 
+    # 5. DERATING & PENALTIES
+    f_derating = 1.0
+    if mode == "θέρμανση":
+        if ΔΤ > 25: f_derating = 0.85 # Simplified derating curve
+    
     load_btu = total * 3.412
     nominal_btu_base = load_btu / f_derating
+    
+    # Usage Penalties
     nominal_btu_final = nominal_btu_base
     penalties = {}
     if d.get("περιστασιακή"):
         nominal_btu_final *= 1.25
-        penalties["Περιστασιακή"] = 1.25
+        penalties["Περιστασιακή χρήση"] = 1.25
     if d.get("αθόρυβη"):
         nominal_btu_final *= 1.20
-        penalties["Αθόρυβη"] = 1.20
+        penalties["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
 
+    # Breakdown for UI
     breakdown = {
-        "Τοίχοι": U_wall * eff_wall_area * ΔΤ,
-        "Οροφή": U_roof * floor_area * b_roof * ΔΤ,
-        "Δάπεδο": U_floor * floor_area * b_floor * ΔΤ,
+        "Εξωτερικοί Τοίχοι": ext_wall_loss,
+        "Τοίχοι (Μη θερμαινόμενοι)": unheated_wall_loss,
+        "Οροφή": roof_loss,
+        "Δάπεδο": floor_loss,
         "Ανοίγματα": window_loss,
         "Αερισμός": infiltration,
-        "Ηλιακά/Εσωτερικά": breakdown_solar + (internal if mode=="ψύξη" else 0)
+        "Ηλιακά/Εσωτερικά": solar_gain + internal
     }
 
     return total/1000, load_btu, nominal_btu_base, nominal_btu_final, penalties, breakdown, f_derating
