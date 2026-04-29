@@ -127,11 +127,14 @@ d = {
 
 if st.button("Υπολογισμός"):
     try:
+        # 1. Run Calculation
         kw, load_btu, nominal_btu_base, nominal_btu_final, unit_penalty_factors, breakdown, f_derating = υπολογισμός(d, mode)
+        
+        # 2. Get Ranges (This fixes your NameError)
         commercial_range_base  = get_commercial_range(nominal_btu_base)
         commercial_range_final = get_commercial_range(nominal_btu_final)
 
-        # ── Save inputs for the Load Profile page ──────────────────────────
+        # 3. Save inputs for the Load Profile page
         if mode == "θέρμανση":
             st.session_state["hvac_inputs_heating"] = d
         else:
@@ -144,9 +147,8 @@ if st.button("Υπολογισμός"):
 
         st.subheader("Ανάλυση φορτίου αιχμής")
         for label, watts in breakdown.items():
-            if watts == 0:
-                continue
-            st.write(f"**{label}:** {watts/1000:.2f} kW")
+            if watts > 0:
+                st.write(f"**{label}:** {watts/1000:.2f} kW")
 
         st.divider()
         st.subheader("Επιλογή μεγέθους κλιματιστικού")
@@ -159,86 +161,58 @@ if st.button("Υπολογισμός"):
         )
 
         if unit_penalty_factors:
-            st.info(f"**Βασική σύσταση (χωρίς προτιμήσεις χρήσης):** {commercial_range_base} BTU")
-            st.warning("**Προσαυξήσεις λόγω προτιμήσεων χρήσης** *(επηρεάζουν μόνο το μέγεθος μονάδας, όχι τις απώλειες)*:")
+            st.info(f"**Βασική σύσταση (χωρίς προτιμήσεις):** {commercial_range_base} BTU")
+            st.warning("**Προσαυξήσεις λόγω προτιμήσεων χρήσης:**")
             for reason, factor in unit_penalty_factors.items():
-                explanation = {
-                    "Περιστασιακή χρήση": (
-                        f"Η μονάδα πρέπει να επιτυγχάνει ταχύτερα την επιθυμητή θερμοκρασία "
-                        f"σε χώρο που δεν κλιματιζόταν προηγουμένως. → ×{factor:.2f}"
-                    ),
-                    "Αθόρυβη/χαμηλή ταχύτητα": (
-                        f"Σε χαμηλή ταχύτητα η απόδοση μειώνεται. "
-                        f"Συνιστάται μονάδα μεγαλύτερης ισχύος. → ×{factor:.2f}"
-                    ),
-                }.get(reason, f"×{factor:.2f}")
-                st.write(f"- **{reason}:** {explanation}")
+                st.write(f"- **{reason}:** ×{factor:.2f}")
 
             total_factor = 1.0
             for f in unit_penalty_factors.values():
                 total_factor *= f
             st.success(
-                f"**Συνιστώμενη ονομαστική ισχύς μονάδας (με προτιμήσεις):** "
+                f"**Συνιστώμενη ονομαστική ισχύς (με προτιμήσεις):** "
                 f"**{commercial_range_final} BTU** "
                 f"*(συνολική προσαύξηση ×{total_factor:.2f})*"
             )
         else:
-            st.success(f"**Συνιστώμενη ονομαστική ισχύς μονάδας:** **{commercial_range_base} BTU**")
+            st.success(f"**Συνιστώμενη ονομαστική ισχύς:** **{commercial_range_base} BTU**")
 
-        altitude_note = (
-            f"Υψόμετρο >500 μ. (αναβάθμιση ζώνης: {base_zone} → {effective_zone})"
-            if υψόμετρο_500 and base_zone != effective_zone
-            else ("Υψόμετρο >500 μ. (ζώνη παραμένει Δ)" if υψόμετρο_500 else "Όχι")
-        )
-
-        unit_penalty_lines = "\n".join(
-            f"  - {r}: ×{f:.2f}" for r, f in unit_penalty_factors.items()
-        ) or "  Καμία"
+        # --- Updated Report String ---
+        unit_penalty_lines = "\n".join(f"  - {r}: ×{f:.2f}" for r, f in unit_penalty_factors.items()) or "  Καμία"
 
         report = f"""ΑΝΑΦΟΡΑ ΕΝΕΡΓΕΙΑΚΩΝ ΑΠΑΙΤΗΣΕΩΝ (Λειτουργία: {mode.upper()})
 --------------------------------------------------
 ΚΛΙΜΑΤΙΚΕΣ ΣΥΝΘΗΚΕΣ:
 - Θερμοκρασία: Εσωτ. {εσωτερική}°C / Εξωτ. {εξωτερική}°C
 - Νομός / Περιοχή: {νομός}
-- Υψόμετρο >500 μ.: {altitude_note}
 - Ζώνη ΚΕΝΑΚ: {kenak_zone_label}
 - Ηλιακή Έκθεση: {ηλιακή_έκθεση_label}
 
 ΠΕΡΙΓΡΑΦΗ ΧΩΡΟΥ:
 - Χώρος: {τύπος} ({επιφάνεια}m² / {ύψος}m ύψος)
-- Βόρειος Προσανατολισμός: {"Ναι (+15% στις απώλειες)" if βόρειος else "Όχι"}
+- Βόρειος Προσανατολισμός: {"Ναι (+15%)" if βόρειος else "Όχι"}
 
 ΔΟΜΙΚΑ ΣΤΟΙΧΕΙΑ:
-- Θερμομόνωση τοίχων: {μόνωση}
-- Εξωτερικοί Τοίχοι (Πλήθος): {εξωτερικοί}
-- Τοίχοι σε επαφή με μη θερμαινόμενους χώρους: {μη_θερμαινόμενοι}
+- Θερμομόνωση τοίχων: {μόνωση_τοίχου}
+- Δάπεδο: {δάπεδο_επαφή}
+- Οροφή: {οροφή_επαφή}
 - Κουφώματα/Υαλοπίνακες: {κουφώματα}
-- Αεροστεγανότητα: {αεροστεγανότητα}
-- Δάπεδο: {δάπεδο}
-- Οροφή: {οροφή if οροφή_υπάρχει else "Δεν υπάρχει / Θερμαινόμενος χώρος"}
-- Παράθυρα: {μεγάλα} Μεγάλα / {μικρά} Μικρά
-- Μπαλκονόπορτες: {μπαλκονόπορτες} Διπλές / {μονές} Μονές / {συρόμενες} Συρόμενες
+- Παράθυρα: {μεγάλα} Μεγάλα / {μικρά} Μικρά / {μπαλκονόπορτες + μονές + συρόμενες} Πόρτες
 
 --------------------------------------------------
 ΑΠΟΤΕΛΕΣΜΑΤΑ
-
-Φορτίο αιχμής (απώλειες): {load_btu:.0f} BTU/h ({kw:.2f} kW)
-Μείωση απόδοσης μονάδας στους {εξωτερική}°C: -{derating_pct:.0f}%
-Βασική ονομαστική ισχύς (χωρίς προτιμήσεις χρήσεως): {nominal_btu_base:,.0f} BTU/h → {commercial_range_base} BTU
-
-Προσαυξήσεις λόγω προτιμήσεων χρήσης:
+Φορτίο αιχμής: {load_btu:.0f} BTU/h ({kw:.2f} kW)
+Ονομαστική ισχύς (Base): {nominal_btu_base:,.0f} BTU/h -> {commercial_range_base} BTU
+Προσαυξήσεις χρήσης:
 {unit_penalty_lines}
-Τελική ονομαστική ισχύς (με προτιμήσεις χρήσεως): {nominal_btu_final:,.0f} BTU/h → {commercial_range_final} BTU
+Τελική επιλογή: {commercial_range_final} BTU
 --------------------------------------------------"""
         st.code(report, language="text")
 
         st.markdown("---")
-        st.caption(
-            "**Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση. "
-            "Για την οριστική μελέτη, απαιτείται αυτοψία από αδειούχο μηχανολόγο."
-        )
+        st.caption("**Αποποίηση Ευθύνης:** Ο παρών υπολογισμός αποτελεί εκτίμηση.")
+
     except Exception as e:
         st.error(f"Σφάλμα: {e}")
-
     except Exception as e:
         st.error(f"Σφάλμα κατά τον υπολογισμό: {e}")
