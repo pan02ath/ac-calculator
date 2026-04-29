@@ -73,7 +73,7 @@ COMMERCIAL_SIZES = [7, 9, 10, 12, 13, 14, 16, 18, 20, 22, 24, 30]
 
 # EN 12831 Adjacency b-factors (0.0 for heated apartment contact)
 ADJACENCY_B = {
-    "άλλο διαμέρισμα": 0.0,
+    "άλλο διαμέρισμα": 0.2,
     "μη_θερμαινόμενος_χώρος": 0.50,
     "πιλοτή": 1.0, 
     "ταράτσα_εκτεθειμένη": 1.0,
@@ -107,18 +107,21 @@ def υπολογισμός(d, mode):
     
     # Roof logic
     if d["οροφή"] == "άλλο διαμέρισμα":
-        U_roof, b_roof = 0, 0
+        # Use a standard U-value for an internal slab (usually ~2.0 if uninsulated)
+        U_roof = 2.0 
+        b_roof = ADJACENCY_B["άλλο διαμέρισμα"]
     else:
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
     
     # Floor logic
     if d["δάπεδο"] == "άλλο διαμέρισμα":
-        U_floor, b_floor = 0, 0
+        U_floor = 2.0 
+        b_floor = ADJACENCY_B["άλλο διαμέρισμα"]
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
-
+        
     # Windows
     total_glazing_area = 0
     window_loss = 0
