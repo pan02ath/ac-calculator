@@ -224,6 +224,12 @@ def υπολογισμός(d, mode):
 
     b_roof  = ADJACENCY_B.get(d["οροφή"], 1.0) if d["οροφή_υπάρχει"] else 0
     b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
+    b_wall = ADJACENCY_B.get(
+        "μη_θερμαινόμενος_χώρος"
+        if d.get("μη_θερμαινόμενοι", 0) > 0
+        else "άλλο_διαμέρισμα",
+        1.0
+    )
 
     window_loss = 0
     solar_gain = 0
@@ -256,7 +262,7 @@ def υπολογισμός(d, mode):
     internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
 
     transmission = (
-        U_wall  * effective_wall_area * ΔΤ
+        U_wall  * effective_wall_area * b_wall * ΔΤ
         + U_roof  * roof_area * b_roof * ΔΤ
         + U_floor * floor_area * b_floor * ΔΤ
         + window_loss
