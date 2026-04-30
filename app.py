@@ -214,5 +214,3 @@ if st.button("Υπολογισμός"):
 
     except Exception as e:
         st.error(f"Σφάλμα: {e}")
-    except Exception as e:
-        st.error(f"Σφάλμα κατά τον υπολογισμό: {e}")
