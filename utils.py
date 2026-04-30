@@ -202,6 +202,9 @@ def υπολογισμός(d, mode):
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
 
+    roof_loss  = U_roof  * floor_area * b_roof  * ΔΤ
+    floor_loss = U_floor * floor_area * b_floor * ΔΤ
+
     # 2. TOTAL TRANSMISSION & BRIDGES
     # Add 10% thermal bridge penalty for older buildings
     transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
