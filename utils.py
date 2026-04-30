@@ -183,22 +183,24 @@ def υπολογισμός(d, mode):
     U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
     unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
 
-    # D. ROOF & FLOOR (άλλο διαμέρισμα vs specific types)
-    # Using safety factor b=0.20 for heated neighbors
+    # D. ROOF & FLOOR
+    # Logic: If adjacency is "άλλο διαμέρισμα", we ignore the UI's 
+    # insulation choice and use the building's global era (d["μόνωση"])
+    
     if d["οροφή"] == "άλλο διαμέρισμα":
-        U_roof, b_roof = 2.0, 0.20 
+        U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση"]] 
+        b_roof = 0.15 
     else:
+        # Use the specific insulation chosen in the UI
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
 
     if d["δάπεδο"] == "άλλο διαμέρισμα":
-        U_floor, b_floor = 2.0, 0.20
+        U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση"]]
+        b_floor = 0.15
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
-
-    roof_loss = U_roof * floor_area * b_roof * ΔΤ
-    floor_loss = U_floor * floor_area * b_floor * ΔΤ
 
     # 2. TOTAL TRANSMISSION & BRIDGES
     # Add 10% thermal bridge penalty for older buildings
