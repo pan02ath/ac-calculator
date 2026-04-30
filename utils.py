@@ -187,13 +187,13 @@ def υπολογισμός(d, mode):
     # Using safety factor b=0.20 for heated neighbors
     
     if d["οροφή"] == "άλλο διαμέρισμα":
-        U_roof, b_roof = 2.0, 0.20 
+        U_roof, b_roof = 2.0, 0.10 
     else:
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
 
     if d["δάπεδο"] == "άλλο διαμέρισμα":
-         U_floor, b_floor = 2.0, 0.20
+         U_floor, b_floor = 2.0, 0.10
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
