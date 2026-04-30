@@ -183,21 +183,19 @@ def υπολογισμός(d, mode):
     U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
     unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
 
-    # D. ROOF & FLOOR
-    # Logic: If adjacency is "άλλο διαμέρισμα", we ignore the UI's 
-    # insulation choice and use the building's global era (d["μόνωση"])
-    
+    # D. ROOF & FLOOR (EN 12831 Simplified Logic)
     if d["οροφή"] == "άλλο διαμέρισμα":
+        # Inherit construction quality from building era
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση"]] 
-        b_roof = 0.15 
+        # EN 12831 Safety Factor for heated neighbors (f_ij)
+        b_roof = 0.10 
     else:
-        # Use the specific insulation chosen in the UI
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
-
+    
     if d["δάπεδο"] == "άλλο διαμέρισμα":
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση"]]
-        b_floor = 0.15
+        b_floor = 0.10
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
