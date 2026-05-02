@@ -1,0 +1,10 @@
+[logger]
+level = "info"
+
+[client]
+showErrorDetails = false
+
+[server]
+headless = true
+enableCORS = false
+port = 8501
