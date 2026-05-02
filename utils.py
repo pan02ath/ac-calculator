@@ -148,17 +148,14 @@ def υπολογισμός(d, mode):
     ΔΤ = abs(d["εξωτερική"] - d["εσωτερική"])
     floor_area = d["επιφάνεια"]
     
-    # Deriving geometry for internal partitions
+    # Deriving geometry
     side_length = math.sqrt(floor_area)
     wall_height = d["ύψος"]
     single_wall_gross_area = side_length * wall_height
     
-    # 1. TRANSMISSION LOSSES (Φορτία Μετάδοσης)
-    
-    # A. EXTERIOR WALLS
+    # 1. TRANSMISSION LOSSES
     total_ext_wall_area = 4 * single_wall_gross_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
     
-    # B. WINDOWS
     total_glazing_area = (
         d["μεγάλα"] * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
         d["μικρά"] * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
@@ -169,21 +166,16 @@ def υπολογισμός(d, mode):
     U_win = ΚΟΥΦΩΜΑΤΑ[d["κουφώματα"]]
     window_loss = U_win * total_glazing_area * ΔΤ
     
-    # Net Wall Area (Gross - Windows)
     eff_ext_wall_area = max(total_ext_wall_area - total_glazing_area, 0)
     U_wall = U_ΤΟΙΧΟΥ[d["μόνωση"]]
     ext_wall_loss = U_wall * eff_ext_wall_area * ΔΤ
 
-    # C. UNHEATED ADJACENT WALLS
     U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
     unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
 
-    # D. ROOF & FLOOR (Robust Adjacency Logic)
-    # Use .get() to avoid KeyError if 'άλλο διαμέρισμα' has different spacing
+    # D. ROOF & FLOOR
     b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
     b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
-
-    # Lookup U-values from your tables based on the selected insulation era
     U_roof = U_ΟΡΟΦΗΣ_BASE.get(d["μόνωση_οροφής"], 2.0)
     U_floor = U_ΔΑΠΕΔΟΥ_BASE.get(d["μόνωση_δάπεδου"], 2.0)
 
@@ -191,17 +183,16 @@ def υπολογισμός(d, mode):
     floor_loss = U_floor * floor_area * b_floor * ΔΤ
 
     # 2. TOTAL TRANSMISSION & BRIDGES
-    # Standard 15% penalty for uninsulated buildings (U > 0.50)
     transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
     thermal_bridges = 1.15 if U_wall > 0.50 else 1.07
     transmission *= thermal_bridges
 
-    # 3. INFILTRATION (Αερισμός)
+    # 3. INFILTRATION
     volume = floor_area * wall_height
     base_ach = ΑΕΡΟΔΙΕΙΣΔΥΣΗ[d["αεροστεγανότητα"]]
     infiltration = 0.33 * base_ach * volume * ΔΤ
 
-    # 4. TOTALS & COOLING SPECIFICS
+    # 4. TOTALS
     solar_gain = 0
     internal = 0
     if mode == "ψύξη":
@@ -209,42 +200,41 @@ def υπολογισμός(d, mode):
         internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
         total = transmission + infiltration + solar_gain + internal
     else:
-        # Heating: Apply 10% safety margin
         total = (transmission + infiltration) * 1.10 
         if d.get("βόρειος"): total *= 1.15
 
     # 5. SOPHISTICATED DERATING (Performance Adjustment)
+    # Replaces the old f_derating with a smart 3-stage model
     f_performance = 1.0
     ext_temp = d["εξωτερική"]
 
     if mode == "θέρμανση":
         if ext_temp >= 7:
-            f_performance = 1.0 # Nominal or slightly better
+            f_performance = 1.0
         elif 4 <= ext_temp < 7:
-            # Gentle decline before the defrost zone
+            # Gentle decline
             f_performance = 1.0 - (0.015 * (7 - ext_temp))
         elif -2 <= ext_temp < 4:
             # SHARP DECLINE (Defrost Zone: 4°C to -2°C)
-            # We drop from ~0.95 at 4°C down to ~0.70 at -2°C
-            # This accounts for energy lost to coil melting
-            drop_from_nominal = 0.05 + (0.045 * (4 - ext_temp)) 
-            f_performance = 1.0 - drop_from_nominal
+            # Loss of approx 5% base + 4.5% per degree
+            drop = 0.05 + (0.045 * (4 - ext_temp)) 
+            f_performance = 1.0 - drop
         else:
             # STABILIZED COLD (Below -2°C)
-            # The air is drier, drop is less steep but starts from a low base (~0.70)
+            # Starts from the ~0.70 base with a slower 1% per degree decline
             f_performance = 0.70 - (0.01 * (-2 - ext_temp))
-            
-    else: # COOLING (Linear remains reliable for cooling)
+    else:
+        # Cooling derating (above 35°C)
         if ext_temp > 35:
             f_performance = 1.0 - (0.015 * (ext_temp - 35))
 
-    # Safety floor
+    # Safety minimum to prevent division by zero or negative results
     f_performance = max(f_performance, 0.45)
-
-    load_btu = total * 3.412
-    nominal_btu_base = load_btu / f_performance
     
-    # Usage Penalties
+    load_btu = total * 3.412
+    nominal_btu_base = load_btu / f_performance # This calculates the required 'labeled' size
+    
+    # 6. USAGE PENALTIES
     nominal_btu_final = nominal_btu_base
     penalties = {}
     if d.get("περιστασιακή"):
@@ -254,7 +244,6 @@ def υπολογισμός(d, mode):
         nominal_btu_final *= 1.20
         penalties["Αθόρυβη/χαμηλή ταχύτητα"] = 1.20
 
-    # Breakdown for UI
     breakdown = {
         "Εξωτερικοί Τοίχοι": ext_wall_loss,
         "Τοίχοι (Μη θερμαινόμενοι)": unheated_wall_loss,
@@ -265,4 +254,5 @@ def υπολογισμός(d, mode):
         "Ηλιακά/Εσωτερικά": solar_gain + internal
     }
 
-    return total/1000, load_btu, nominal_btu_base, nominal_btu_final, penalties, breakdown, f_derating
+    # IMPORTANT: Ensure f_performance is returned as the last value to match your UI requirements
+    return total/1000, load_btu, nominal_btu_base, nominal_btu_final, penalties, breakdown, f_performance
