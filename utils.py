@@ -213,13 +213,36 @@ def υπολογισμός(d, mode):
         total = (transmission + infiltration) * 1.10 
         if d.get("βόρειος"): total *= 1.15
 
-    # 5. DERATING & PENALTIES
-    f_derating = 1.0
+    # 5. SOPHISTICATED DERATING (Performance Adjustment)
+    f_performance = 1.0
+    ext_temp = d["εξωτερική"]
+
     if mode == "θέρμανση":
-        if ΔΤ > 25: f_derating = 0.85 
-    
+        if ext_temp >= 7:
+            f_performance = 1.0 # Nominal or slightly better
+        elif 4 <= ext_temp < 7:
+            # Gentle decline before the defrost zone
+            f_performance = 1.0 - (0.015 * (7 - ext_temp))
+        elif -2 <= ext_temp < 4:
+            # SHARP DECLINE (Defrost Zone: 4°C to -2°C)
+            # We drop from ~0.95 at 4°C down to ~0.70 at -2°C
+            # This accounts for energy lost to coil melting
+            drop_from_nominal = 0.05 + (0.045 * (4 - ext_temp)) 
+            f_performance = 1.0 - drop_from_nominal
+        else:
+            # STABILIZED COLD (Below -2°C)
+            # The air is drier, drop is less steep but starts from a low base (~0.70)
+            f_performance = 0.70 - (0.01 * (-2 - ext_temp))
+            
+    else: # COOLING (Linear remains reliable for cooling)
+        if ext_temp > 35:
+            f_performance = 1.0 - (0.015 * (ext_temp - 35))
+
+    # Safety floor
+    f_performance = max(f_performance, 0.45)
+
     load_btu = total * 3.412
-    nominal_btu_base = load_btu / f_derating
+    nominal_btu_base = load_btu / f_performance
     
     # Usage Penalties
     nominal_btu_final = nominal_btu_base
