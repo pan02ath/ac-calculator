@@ -178,27 +178,20 @@ def υπολογισμός(d, mode):
     U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
     unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
 
-    # D. ROOF & FLOOR (Corrected Slab Logic)
-    # Using specific era U-values for neighbors instead of hardcoded 2.0
-    if d["οροφή"] == "άλλο διαμέρισμα":
-        U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
-        b_roof = ADJACENCY_B["άλλο διαμέρισμα"]
-    else:
-        U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
-        b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
+    # D. ROOF & FLOOR (Robust Adjacency Logic)
+    # Use .get() to avoid KeyError if 'άλλο διαμέρισμα' has different spacing
+    b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
+    b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
 
-    if d["δάπεδο"] == "άλλο διαμέρισμα":
-        U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
-        b_floor = ADJACENCY_B["άλλο διαμέρισμα"]
-    else:
-        U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
-        b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
+    # Lookup U-values from your tables based on the selected insulation era
+    U_roof = U_ΟΡΟΦΗΣ_BASE.get(d["μόνωση_οροφής"], 2.0)
+    U_floor = U_ΔΑΠΕΔΟΥ_BASE.get(d["μόνωση_δάπεδου"], 2.0)
 
     roof_loss  = U_roof  * floor_area * b_roof  * ΔΤ
     floor_loss = U_floor * floor_area * b_floor * ΔΤ
 
     # 2. TOTAL TRANSMISSION & BRIDGES
-    # Standard 15% penalty for uninsulated buildings (Thermal Bridges)
+    # Standard 15% penalty for uninsulated buildings (U > 0.50)
     transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
     thermal_bridges = 1.15 if U_wall > 0.50 else 1.07
     transmission *= thermal_bridges
@@ -216,7 +209,8 @@ def υπολογισμός(d, mode):
         internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
         total = transmission + infiltration + solar_gain + internal
     else:
-        total = (transmission + infiltration) * 1.10 # 10% safety
+        # Heating: Apply 10% safety margin
+        total = (transmission + infiltration) * 1.10 
         if d.get("βόρειος"): total *= 1.15
 
     # 5. DERATING & PENALTIES
