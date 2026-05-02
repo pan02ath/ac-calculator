@@ -54,7 +54,6 @@ U_ΔΑΠΕΔΟΥ_BASE = {
 
 ΑΕΡΟΔΙΕΙΣΔΥΣΗ = {"μέτρια": 0.7, "κακή": 1.2, "καλή": 0.4}
 
-# Updated to use "άλλο διαμέρισμα"
 ΔΑΠΕΔΟ = ["άλλο διαμέρισμα", "πιλοτή", "μη_θερμαινόμενος_χώρος", "έδαφος"]
 ΟΡΟΦΗ = ["άλλο διαμέρισμα", "ταράτσα_εκτεθειμένη", "κεραμοσκεπή", "μη_θερμαινόμενος_χώρος"]
 
@@ -68,7 +67,6 @@ U_ΔΑΠΕΔΟΥ_BASE = {
 ΝΟΜΟΙ_ΖΩΝΗ = {
     "Αττική":              "Β",  
     "Θεσσαλονίκη":         "Γ",  
-    # ── αλφαβητικά ──────────────────────────────────────
     "Αιτωλοακαρνανία":     "Β",
     "Αργολίδα":            "Α",
     "Αρκαδία":             "Β",
@@ -123,10 +121,10 @@ U_ΔΑΠΕΔΟΥ_BASE = {
 ΖΩΝΗ_ΕΠΟΜΕΝΗ = {"Α": "Β", "Β": "Γ", "Γ": "Δ", "Δ": "Δ"}
 COMMERCIAL_SIZES = [7, 9, 10, 12, 13, 14, 16, 18, 20, 22, 24, 30]
 
-# EN 12831 Adjacency b-factors (0.0 for heated apartment contact)
+# EN 12831 Adjacency b-factors
 ADJACENCY_B = {
-    "άλλο διαμέρισμα": 0.2,
-    "μη_θερμαινόμενος_χώρος": 0.50,
+    "άλλο διαμέρισμα": 0.1,         # Neighbor assumed heated
+    "μη_θερμαινόμενος_χώρος": 0.50, # Standard EN value
     "πιλοτή": 1.0, 
     "ταράτσα_εκτεθειμένη": 1.0,
     "κεραμοσκεπή": 0.90,
@@ -158,10 +156,9 @@ def υπολογισμός(d, mode):
     # 1. TRANSMISSION LOSSES (Φορτία Μετάδοσης)
     
     # A. EXTERIOR WALLS
-    # Based on number of external walls selected (1-4)
     total_ext_wall_area = 4 * single_wall_gross_area * ΤΟΙΧΟΙ[d["εξωτερικοί"]]
     
-    # B. WINDOWS (Calculated from inputs)
+    # B. WINDOWS
     total_glazing_area = (
         d["μεγάλα"] * ΑΝΟΙΓΜΑΤΑ["μεγάλο_παράθυρο"] +
         d["μικρά"] * ΑΝΟΙΓΜΑΤΑ["μικρό_παράθυρο"] +
@@ -177,23 +174,22 @@ def υπολογισμός(d, mode):
     U_wall = U_ΤΟΙΧΟΥ[d["μόνωση"]]
     ext_wall_loss = U_wall * eff_ext_wall_area * ΔΤ
 
-    # C. UNHEATED ADJACENT WALLS (μη θερμαινόμενοι)
-    # Scientific: Internal walls usually have no insulation (U ~2.0)
-    # b-factor 0.50 per EN 12831
+    # C. UNHEATED ADJACENT WALLS
     U_int_wall = 2.0 if d["μόνωση"] == "Πριν το 1980, χωρίς μόνωση" else 0.70
     unheated_wall_loss = d["μη_θερμαινόμενοι"] * single_wall_gross_area * U_int_wall * 0.50 * ΔΤ
 
-    # D. ROOF & FLOOR (άλλο διαμέρισμα vs specific types)
-    # Using safety factor b=0.20 for heated neighbors
-    
+    # D. ROOF & FLOOR (Corrected Slab Logic)
+    # Using specific era U-values for neighbors instead of hardcoded 2.0
     if d["οροφή"] == "άλλο διαμέρισμα":
-        U_roof, b_roof = 2.0, 0.20 
+        U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
+        b_roof = ADJACENCY_B["άλλο διαμέρισμα"]
     else:
         U_roof = U_ΟΡΟΦΗΣ_BASE[d["μόνωση_οροφής"]]
         b_roof = ADJACENCY_B.get(d["οροφή"], 1.0)
 
     if d["δάπεδο"] == "άλλο διαμέρισμα":
-         U_floor, b_floor = 2.0, 0.20
+        U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
+        b_floor = ADJACENCY_B["άλλο διαμέρισμα"]
     else:
         U_floor = U_ΔΑΠΕΔΟΥ_BASE[d["μόνωση_δάπεδου"]]
         b_floor = ADJACENCY_B.get(d["δάπεδο"], 1.0)
@@ -202,9 +198,9 @@ def υπολογισμός(d, mode):
     floor_loss = U_floor * floor_area * b_floor * ΔΤ
 
     # 2. TOTAL TRANSMISSION & BRIDGES
-    # Add 10% thermal bridge penalty for older buildings
+    # Standard 15% penalty for uninsulated buildings (Thermal Bridges)
     transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
-    thermal_bridges = 1.10 if U_wall > 0.50 else 1.05
+    thermal_bridges = 1.15 if U_wall > 0.50 else 1.07
     transmission *= thermal_bridges
 
     # 3. INFILTRATION (Αερισμός)
@@ -216,20 +212,17 @@ def υπολογισμός(d, mode):
     solar_gain = 0
     internal = 0
     if mode == "ψύξη":
-        # Solar gains through glass
         solar_gain = total_glazing_area * d["βάση_ακτινοβολίας"] * d["ηλιακή_έκθεση"] * 0.35
-        # Heat from people/appliances
         internal = ΕΣΩΤΕΡΙΚΑ[d["τύπος"]] * ΕΣΩΤΕΡΙΚΑ_ΣΥΝΤΕΛΕΣΤΗΣ[d["τύπος"]]
         total = transmission + infiltration + solar_gain + internal
     else:
-        # Heating: Apply North orientation penalty if checked
         total = (transmission + infiltration) * 1.10 # 10% safety
         if d.get("βόρειος"): total *= 1.15
 
     # 5. DERATING & PENALTIES
     f_derating = 1.0
     if mode == "θέρμανση":
-        if ΔΤ > 25: f_derating = 0.85 # Simplified derating curve
+        if ΔΤ > 25: f_derating = 0.85 
     
     load_btu = total * 3.412
     nominal_btu_base = load_btu / f_derating
