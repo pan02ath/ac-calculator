@@ -52,7 +52,7 @@ U_ΔΑΠΕΔΟΥ_BASE = {
     "μικρό_παράθυρο": 0.36,
 }
 
-ΑΕΡΟΔΙΕΙΣΔΥΣΗ = {"μέτρια": 0.7, "κακή": 1.2, "καλή": 0.4}
+ΑΕΡΟΔΙΕΙΣΔΥΣΗ = {"μέτρια": 1.0, "κακή": 1.8, "καλή": 0.4}
 
 ΔΑΠΕΔΟ = ["άλλο διαμέρισμα", "πιλοτή", "μη_θερμαινόμενος_χώρος", "έδαφος"]
 ΟΡΟΦΗ = ["άλλο διαμέρισμα", "ταράτσα_εκτεθειμένη", "κεραμοσκεπή", "μη_θερμαινόμενος_χώρος"]
@@ -184,8 +184,14 @@ def υπολογισμός(d, mode):
 
     # 2. TOTAL TRANSMISSION & BRIDGES
     transmission = (ext_wall_loss + unheated_wall_loss + roof_loss + floor_loss + window_loss)
-    thermal_bridges = 1.15 if U_wall > 0.50 else 1.07
-    transmission *= thermal_bridges
+    # EN ISO 14683 simplified correction
+    # Maps to ΔUwb: 0.15 (no insulation), 0.10 (standard), 0.05 (well insulated)
+    if U_wall >= 1.50:      # Pre-1980, uninsulated
+        thermal_bridges = 1.15
+    elif U_wall >= 0.45:    # 1980–2010, basic/medium
+        thermal_bridges = 1.10
+    else:                   # Post-2010, KENAK/PUR
+        thermal_bridges = 1.05    transmission *= thermal_bridges
 
     # 3. INFILTRATION
     volume = floor_area * wall_height
