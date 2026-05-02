@@ -191,7 +191,8 @@ def υπολογισμός(d, mode):
     elif U_wall >= 0.45:    # 1980–2010, basic/medium
         thermal_bridges = 1.10
     else:                   # Post-2010, KENAK/PUR
-        thermal_bridges = 1.05    transmission *= thermal_bridges
+        thermal_bridges = 1.05    
+    transmission *= thermal_bridges
 
     # 3. INFILTRATION
     volume = floor_area * wall_height
